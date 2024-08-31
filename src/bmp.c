@@ -12,7 +12,7 @@
 void printError(int error) {
   switch (error) {
   case ARGUMENT_ERROR:
-    printf("Usage:ex5 <source> <destination>\n");
+    printf("Usage: ./<filter> <source> <destination>\n");
     break;
   case FILE_ERROR:
     printf("Unable to open file!\n");
