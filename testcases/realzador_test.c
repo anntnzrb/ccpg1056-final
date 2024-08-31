@@ -6,8 +6,8 @@
 #include <unistd.h>
 
 #include "bmp.h"
-#include "realzador.h"
 #include "publicador.h"
+#include "realzador.h"
 
 #define THREAD_NUM 8
 #define SHM_NAME "/bmp_imagen_compartida"
@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
   if (!checkBMPValid(&imageOut->header))
     handle_err(VALID_ERROR);
 
-  applyRealceParallel(imagen_compartida, imageOut, THREAD_NUM);
+  apply_realzador_parallel(imagen_compartida, imageOut, THREAD_NUM);
   writeImage(argv[2], imageOut);
 
   freeImage(imageOut);

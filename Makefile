@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99 -Iinclude
-LDFLAGS =
+CFLAGS = -Wall -Wextra -std=c99 -Iinclude -pthread
+LDFLAGS = -pthread
 
 # linux & darwin settings
 ifeq ($(UNAME_S),Linux)
@@ -9,7 +9,7 @@ endif
 
 SRC_DIR = src
 TESTCASES_DIR = testcases
-OBJS = $(SRC_DIR)/bmp.o $(SRC_DIR)/realzador.o $(SRC_DIR)/publicador.o $(SRC_DIR)/desenfocador.o
+OBJS = $(SRC_DIR)/bmp.o $(SRC_DIR)/realzador.o $(SRC_DIR)/publicador.o $(SRC_DIR)/desenfocador.o $(SRC_DIR)/common_filter.o
 
 all: clean realzador_test desenfocador_test
 

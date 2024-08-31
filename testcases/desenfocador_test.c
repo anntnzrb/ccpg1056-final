@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
   if (!checkBMPValid(&imageOut->header))
     handle_err(VALID_ERROR);
 
-  applyParallel(imagen_compartida, imageOut, THREAD_NUM);
+  apply_desenfocador_parallel(imagen_compartida, imageOut, THREAD_NUM);
   writeImage(argv[2], imageOut);
 
   freeImage(imageOut);

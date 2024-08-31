@@ -2,27 +2,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "bmp.h"
+#include "common_filter.h"
 #include "desenfocador.h"
 
-// 2D array representing the filter that will be applied to the img
+// 2D matrix que representa el filtro que se aplica a la imagen
 int boxFilter[FILTER_SIZE][FILTER_SIZE] = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
 
-// calc val of a pixel in the output image
 int calcPixelVal(Pixel **imagePixels, int posX, int posY, int imgWidth,
                  int imgHeight, RGBChannel color) {
   int pixelValue = 0;
-  // iterate over the filter
+  // iterar sobre el filtro (matriz 3x3)
   for (int offsetX = 0; offsetX < FILTER_SIZE; offsetX++) {
     for (int offsetY = 0; offsetY < FILTER_SIZE; offsetY++) {
       int adjustedX = posX - FILTER_SIZE / 2 + offsetX;
       int adjustedY = posY - FILTER_SIZE / 2 + offsetY;
 
-      // ensure X and Y are within bounds
+      // asegurar que X e Y estén dentro de los límites
       adjustedX = MAX(0, MIN(adjustedX, imgHeight - 1));
       adjustedY = MAX(0, MIN(adjustedY, imgWidth - 1));
 
-      // accum pixel vals based off color channel
+      // sumar valores de píxeles basados en el canal de color
       switch (color) {
       case RED:
         pixelValue +=
@@ -43,10 +42,11 @@ int calcPixelVal(Pixel **imagePixels, int posX, int posY, int imgWidth,
   return pixelValue;
 }
 
-void apply(BMP_Image *imageIn, BMP_Image *imageOut, int startRow, int endRow) {
+void apply_desenfocador(BMP_Image *imageIn, BMP_Image *imageOut, int startRow,
+                         int endRow) {
   for (int row = startRow; row < endRow; row++) {
     for (int col = 0; col < imageIn->header.width_px; col++) {
-      // calc new pixel vals for each color channel
+      // calcular nuevos valores de pixeles para cada canal de color
       imageOut->pixels[row][col].red =
           calcPixelVal(imageIn->pixels, row, col, imageIn->header.width_px,
                        imageIn->norm_height, RED) /
@@ -64,51 +64,7 @@ void apply(BMP_Image *imageIn, BMP_Image *imageOut, int startRow, int endRow) {
   }
 }
 
-void applyParallel(BMP_Image *imageIn, BMP_Image *imageOut, int numThreads) {
-  printf("Applying filter with %d threads\n", numThreads);
-
-  pthread_t *threads = malloc(numThreads * sizeof(pthread_t));
-  parameters *params = malloc(numThreads * sizeof(parameters));
-
-  const int height_px = imageIn->norm_height;
-  const int rowsPerThread = height_px / numThreads;
-  int remainingRows = height_px % numThreads;
-  int startRow = 0;
-  int endRow;
-
-  // div img rows among the threads
-  for (int i = 0; i < numThreads; i++) {
-    endRow = startRow + rowsPerThread;
-
-    // distribute remaining rows
-    if (remainingRows > 0) {
-      endRow = endRow + 1;
-      remainingRows = remainingRows - 1;
-    }
-
-    // set params for each thread
-    params[i] = (parameters){.imageIn = imageIn,
-                             .imageOut = imageOut,
-                             .startRow = startRow,
-                             .endRow = endRow};
-
-    pthread_create(&threads[i], NULL, filterThreadWorker, &params[i]);
-
-    startRow = endRow;
-  }
-
-  // wait for all threads to complete
-  for (int i = 0; i < numThreads; i++) {
-    pthread_join(threads[i], NULL);
-  }
-
-  free(threads);
-  free(params);
-}
-
-void *filterThreadWorker(void *args) {
-  parameters *params = (parameters *)args;
-  apply(params->imageIn, params->imageOut, params->startRow, params->endRow);
-
-  return NULL;
+void apply_desenfocador_parallel(BMP_Image *imageIn, BMP_Image *imageOut,
+                                  int numThreads) {
+  apply_filter_parallel(imageIn, imageOut, numThreads, apply_desenfocador);
 }

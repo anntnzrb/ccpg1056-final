@@ -1,25 +1,14 @@
 #ifndef REALZADOR_H
 #define REALZADOR_H
 
-#include "bmp.h"
+#include "common_filter.h"
 
-#define FILTER_SIZE 3
+// fn para aplicar realzador a una porción de la imagen
+void apply_realzador(BMP_Image *imageIn, BMP_Image *imageOut, int startRow,
+                  int endRow);
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-
-typedef struct {
-    BMP_Image *imageIn;
-    BMP_Image *imageOut;
-    int startRow;
-    int endRow;
-} realzador_parameters;
-
-// RGB channel enum
-typedef enum { RED, GREEN, BLUE } RGBChannel;
-
-void apply_realce(BMP_Image *imageIn, BMP_Image *imageOut, int startRow, int endRow);
-void applyRealceParallel(BMP_Image *imageIn, BMP_Image *imageOut, int numThreads);
-void *realceThreadWorker(void *args);
+// fn para aplicar realzador en paralelo
+void apply_realzador_parallel(BMP_Image *imageIn, BMP_Image *imageOut,
+                         int numThreads);
 
 #endif // REALZADOR_H
