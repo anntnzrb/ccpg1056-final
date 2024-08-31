@@ -5,6 +5,8 @@ result
 outputs/
 main
 instructions.txt
+realzador_test
+desenfocador_test
 
 ### C ###
 # Prerequisites

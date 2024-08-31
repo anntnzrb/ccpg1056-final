@@ -8,35 +8,36 @@ ifeq ($(UNAME_S),Linux)
 endif
 
 SRC_DIR = src
-OBJS = $(SRC_DIR)/main.o $(SRC_DIR)/bmp.o $(SRC_DIR)/desenfocador.o $(SRC_DIR)/publicador.o
+TESTCASES_DIR = testcases
+OBJS = $(SRC_DIR)/bmp.o $(SRC_DIR)/realzador.o $(SRC_DIR)/publicador.o $(SRC_DIR)/desenfocador.o
 
-DOCS_DIR = docs
+all: clean realzador_test desenfocador_test
 
-all: clean main
-
-main: $(OBJS)
-	@mkdir -p outputs
-	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
-$(SRC_DIR)/%.o: $(SRC_DIR)/%.c
+%.o: %.c
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -rf $(SRC_DIR)/*.o $(SRC_DIR)/*.d main outputs/
+	rm -rf $(SRC_DIR)/*.o $(TESTCASES_DIR)/*.o $(SRC_DIR)/*.d realzador_test desenfocador_test
 
-test: main
-	@./main testcases/test.bmp outputs/test_out.bmp
-	@diff outputs/test_out.bmp testcases/test_sol.bmp && printf 'Test passed!\n'
+define build_and_run_test
+	@mkdir -p outputs
+	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	@./$@ testcases/test.bmp outputs/test_$(1)_out.bmp
+endef
 
-testmem: main
-	valgrind --tool=memcheck --leak-check=summary ./main testcases/test.bmp outputs/test_out.bmp
+realzador_test: $(TESTCASES_DIR)/realzador_test.o $(OBJS)
+	$(call build_and_run_test,realzador)
+
+desenfocador_test: $(TESTCASES_DIR)/desenfocador_test.o $(OBJS)
+	$(call build_and_run_test,desenfocador)
+	@diff outputs/test_desenfocador_out.bmp testcases/test_sol.bmp && printf 'desenfocador: Test pasado\n'
 
 docs:
 	@printf "Building docs...\\n"
-	typst compile --root $(DOCS_DIR) $(DOCS_DIR)/main.typ 'reporte-Threads.pdf'
+	typst compile --root docs docs/main.typ 'reporte-Threads.pdf'
 
 fmt:
 	@printf "Formatting src tree...\\n"
 	@nix fmt
 
-.PHONY: all clean test testmem main docs fmt
+.PHONY: all clean realzador_test desenfocador_test docs fmt
