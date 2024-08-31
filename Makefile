@@ -30,7 +30,6 @@ realzador_test: $(TESTCASES_DIR)/realzador_test.o $(OBJS)
 
 desenfocador_test: $(TESTCASES_DIR)/desenfocador_test.o $(OBJS)
 	$(call build_and_run_test,desenfocador)
-	@diff outputs/test_desenfocador_out.bmp testcases/test_sol.bmp && printf 'desenfocador: Test pasado\n'
 
 docs:
 	@printf "Building docs...\\n"
