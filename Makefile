@@ -8,7 +8,7 @@ ifeq ($(UNAME_S),Linux)
 endif
 
 SRC_DIR = src
-OBJS = $(SRC_DIR)/main.o $(SRC_DIR)/bmp.o $(SRC_DIR)/desenfocador.o
+OBJS = $(SRC_DIR)/main.o $(SRC_DIR)/bmp.o $(SRC_DIR)/desenfocador.o $(SRC_DIR)/publicador.o
 
 DOCS_DIR = docs
 
@@ -16,7 +16,7 @@ all: clean main
 
 main: $(OBJS)
 	@mkdir -p outputs
-	@$(CC) $(CFLAGS) -o $@ $^
+	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(SRC_DIR)/%.o: $(SRC_DIR)/%.c
 	@$(CC) $(CFLAGS) -c -o $@ $<
