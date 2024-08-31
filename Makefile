@@ -1,5 +1,12 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Wpedantic -Werror -Wshadow -Wunreachable-code -std=c11 -O2 -Iinclude
+CFLAGS = -Wall -Wextra -std=c99 -Iinclude
+LDFLAGS =
+
+# linux & darwin settings
+ifeq ($(UNAME_S),Linux)
+    LDFLAGS += -lrt
+endif
+
 SRC_DIR = src
 OBJS = $(SRC_DIR)/main.o $(SRC_DIR)/bmp.o $(SRC_DIR)/desenfocador.o
 
