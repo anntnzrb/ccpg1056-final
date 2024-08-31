@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 #include "bmp.h"
-#include "filter.h"
+#include "desenfocador.h"
 
 #define THREAD_NUM 8
 

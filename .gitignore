@@ -4,6 +4,7 @@
 result
 outputs/
 main
+instructions.txt
 
 ### C ###
 # Prerequisites
