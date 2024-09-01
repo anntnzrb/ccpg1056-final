@@ -5,9 +5,10 @@
 #include "common_filter.h"
 #include "desenfocador.h"
 
-// 2D matrix que representa el filtro que se aplica a la imagen
+// Matriz 2D que representa el filtro que se aplica a la imagen
 int boxFilter[FILTER_SIZE][FILTER_SIZE] = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
 
+// Calcular valor de píxel para un canal de color
 int calcPixelVal(Pixel **imagePixels, int posX, int posY, int imgWidth,
                  int imgHeight, RGBChannel color) {
   int pixelValue = 0;
@@ -45,9 +46,19 @@ int calcPixelVal(Pixel **imagePixels, int posX, int posY, int imgWidth,
 void apply_desenfocador(BMP_Image *imageIn, BMP_Image *imageOut, int startRow, int endRow) {
   int middleRow = imageIn->norm_height / 2;
   
-  for (int row = startRow; row < endRow && row < middleRow; row++) {
+  int actualStartRow = startRow;
+  int actualEndRow = MIN(endRow, middleRow);
+  
+  // Saltar si está fuera del rango de procesamiento
+  if (actualStartRow >= middleRow) {
+    printf("Desenfocador saltando filas %d a %d (por encima de la fila media %d)\n", startRow, endRow, middleRow);
+    return;
+  }
+  
+  // Procesar solo la mitad superior de la imagen
+  for (int row = actualStartRow; row < actualEndRow; row++) {
     for (int col = 0; col < imageIn->header.width_px; col++) {
-      // aplicar filtro de desenfoque a la mitad superior
+      // Aplicar filtro de desenfoque
       imageOut->pixels[row][col].red =
           calcPixelVal(imageIn->pixels, row, col, imageIn->header.width_px,
                        imageIn->norm_height, RED) /
@@ -63,6 +74,8 @@ void apply_desenfocador(BMP_Image *imageIn, BMP_Image *imageOut, int startRow, i
       imageOut->pixels[row][col].alpha = 255;
     }
   }
+  
+  printf("Desenfocador finished processing. Rows: %d to %d (should be < %d)\n", actualStartRow, actualEndRow - 1, middleRow);
 }
 
 void apply_desenfocador_parallel(BMP_Image *imageIn, BMP_Image *imageOut,
