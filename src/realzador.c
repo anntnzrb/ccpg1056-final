@@ -48,30 +48,22 @@ int calcEdgePixelVal(Pixel **imagePixels, int posX, int posY, int imgWidth,
   return MIN(255, MAX(0, abs(pixelValueX) + abs(pixelValueY)));
 }
 
-void apply_realzador(BMP_Image *imageIn, BMP_Image *imageOut, int startRow,
-                  int endRow) {
-  // calcular mitad de la altura de la img
-  int halfHeight = imageIn->norm_height / 2;
-
-  for (int row = startRow; row < endRow; row++) {
-    // aplicar filtro de realce a la mitad inferior de la img
+void apply_realzador(BMP_Image *imageIn, BMP_Image *imageOut, int startRow, int endRow) {
+  int middleRow = imageIn->norm_height / 2;
+  
+  for (int row = MAX(startRow, middleRow); row < endRow; row++) {
     for (int col = 0; col < imageIn->header.width_px; col++) {
-      if (row >= halfHeight) {
-        imageOut->pixels[row][col].red = calcEdgePixelVal(
-            imageIn->pixels, row, col, imageIn->header.width_px,
-            imageIn->norm_height, RED);
-        imageOut->pixels[row][col].green = calcEdgePixelVal(
-            imageIn->pixels, row, col, imageIn->header.width_px,
-            imageIn->norm_height, GREEN);
-        imageOut->pixels[row][col].blue = calcEdgePixelVal(
-            imageIn->pixels, row, col, imageIn->header.width_px,
-            imageIn->norm_height, BLUE);
-        imageOut->pixels[row][col].alpha = 255;
-      } else {
-        // copiar pixels sin cambios en la mitad superior de la img
-        // osea dejarlos como iguales
-        imageOut->pixels[row][col] = imageIn->pixels[row][col];
-      }
+      // aplicar filtro de realce a la mitad inferior
+      imageOut->pixels[row][col].red = calcEdgePixelVal(
+          imageIn->pixels, row, col, imageIn->header.width_px,
+          imageIn->norm_height, RED);
+      imageOut->pixels[row][col].green = calcEdgePixelVal(
+          imageIn->pixels, row, col, imageIn->header.width_px,
+          imageIn->norm_height, GREEN);
+      imageOut->pixels[row][col].blue = calcEdgePixelVal(
+          imageIn->pixels, row, col, imageIn->header.width_px,
+          imageIn->norm_height, BLUE);
+      imageOut->pixels[row][col].alpha = 255;
     }
   }
 }

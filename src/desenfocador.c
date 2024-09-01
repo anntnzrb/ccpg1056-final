@@ -42,32 +42,25 @@ int calcPixelVal(Pixel **imagePixels, int posX, int posY, int imgWidth,
   return pixelValue;
 }
 
-void apply_desenfocador(BMP_Image *imageIn, BMP_Image *imageOut, int startRow,
-                         int endRow) {
-  // Calculate the middle row of the image
+void apply_desenfocador(BMP_Image *imageIn, BMP_Image *imageOut, int startRow, int endRow) {
   int middleRow = imageIn->norm_height / 2;
-
-  for (int row = startRow; row < endRow; row++) {
+  
+  for (int row = startRow; row < endRow && row < middleRow; row++) {
     for (int col = 0; col < imageIn->header.width_px; col++) {
-      if (row < middleRow) {
-        // Apply the blur filter to the upper half of the image
-        imageOut->pixels[row][col].red =
-            calcPixelVal(imageIn->pixels, row, col, imageIn->header.width_px,
-                         imageIn->norm_height, RED) /
-            (FILTER_SIZE * FILTER_SIZE);
-        imageOut->pixels[row][col].green =
-            calcPixelVal(imageIn->pixels, row, col, imageIn->header.width_px,
-                         imageIn->norm_height, GREEN) /
-            (FILTER_SIZE * FILTER_SIZE);
-        imageOut->pixels[row][col].blue =
-            calcPixelVal(imageIn->pixels, row, col, imageIn->header.width_px,
-                         imageIn->norm_height, BLUE) /
-            (FILTER_SIZE * FILTER_SIZE);
-        imageOut->pixels[row][col].alpha = 255;
-      } else {
-        // Copy the pixels without changes for the lower half of the image
-        imageOut->pixels[row][col] = imageIn->pixels[row][col];
-      }
+      // aplicar filtro de desenfoque a la mitad superior
+      imageOut->pixels[row][col].red =
+          calcPixelVal(imageIn->pixels, row, col, imageIn->header.width_px,
+                       imageIn->norm_height, RED) /
+          (FILTER_SIZE * FILTER_SIZE);
+      imageOut->pixels[row][col].green =
+          calcPixelVal(imageIn->pixels, row, col, imageIn->header.width_px,
+                       imageIn->norm_height, GREEN) /
+          (FILTER_SIZE * FILTER_SIZE);
+      imageOut->pixels[row][col].blue =
+          calcPixelVal(imageIn->pixels, row, col, imageIn->header.width_px,
+                       imageIn->norm_height, BLUE) /
+          (FILTER_SIZE * FILTER_SIZE);
+      imageOut->pixels[row][col].alpha = 255;
     }
   }
 }
