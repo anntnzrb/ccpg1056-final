@@ -53,7 +53,7 @@ void apply_realzador(BMP_Image *imageIn, BMP_Image *imageOut, int startRow, int 
   
   for (int row = MAX(startRow, middleRow); row < endRow; row++) {
     for (int col = 0; col < imageIn->header.width_px; col++) {
-      // aplicar filtro de realce a la mitad inferior
+      // aplicar filtro de realzador a la mitad inferior
       imageOut->pixels[row][col].red = calcEdgePixelVal(
           imageIn->pixels, row, col, imageIn->header.width_px,
           imageIn->norm_height, RED);

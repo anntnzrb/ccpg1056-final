@@ -27,18 +27,18 @@ int main(int argc, char **argv) {
     const char *ruta_entrada = argv[1];
     const char *ruta_salida = argv[2];
 
-    // Publicar la imagen de entrada
+    // publicar img entrada
     BMP_Image *imagen_compartida;
     if (publicar_imagen(ruta_entrada, &imagen_compartida) != 0) {
         handle_err(FILE_ERROR);
     }
 
-    // Crear una imagen de salida
+    // asignar mem para img salida
     BMP_Image *imageOut = malloc(sizeof(BMP_Image));
     if (!imageOut)
         handle_err(MEMORY_ERROR);
 
-    // Verificar y copiar la imagen de entrada
+    // verificar y copiar img entrada
     if (!checkBMPValid(&imagen_compartida->header))
         handle_err(VALID_ERROR);
 
@@ -46,18 +46,17 @@ int main(int argc, char **argv) {
     if (!checkBMPValid(&imageOut->header))
         handle_err(VALID_ERROR);
 
-    // Aplicar el filtro realzador a la primera mitad
+    // aplicar filtros en paralelo
     apply_realzador_parallel(imagen_compartida, imageOut, THREAD_NUM);
-
-    // Aplicar el filtro desenfocador a la segunda mitad
     apply_desenfocador_parallel(imagen_compartida, imageOut, THREAD_NUM);
 
-    // Guardar la imagen combinada en disco
+    // guardar img combinada
     writeImage((char *)ruta_salida, imageOut);
 
-    // Liberar recursos
+    // free mem
     freeImage(imageOut);
 
+    // unmap shm
     size_t shm_size = sizeof(BMP_Image) + imagen_compartida->header.imagesize;
     munmap(imagen_compartida, shm_size);
 
