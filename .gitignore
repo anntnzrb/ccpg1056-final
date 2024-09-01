@@ -6,6 +6,10 @@ outputs/
 main
 instructions.txt
 combinador_test
+publicador
+realzador
+desenfocador
+combinador
 
 ### C ###
 # Prerequisites

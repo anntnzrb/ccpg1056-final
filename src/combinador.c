@@ -1,22 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
 #include <unistd.h>
+#include <sys/wait.h>
+#include <sys/mman.h>
+#include <fcntl.h>
 #include "bmp.h"
 #include "publicador.h"
 #include "realzador.h"
 #include "desenfocador.h"
+#include <sys/stat.h>
 
-#define THREAD_NUM 8
 #define SHM_NAME "/bmp_imagen_compartida"
-
-static void handle_err(const int error_code) {
-    printError(error_code);
-    exit(EXIT_FAILURE);
-}
 
 int main(int argc, char **argv) {
     if (argc != 3) {
@@ -27,40 +21,71 @@ int main(int argc, char **argv) {
     const char *ruta_entrada = argv[1];
     const char *ruta_salida = argv[2];
 
-    // publicar img entrada
-    BMP_Image *imagen_compartida;
-    if (publicar_imagen(ruta_entrada, &imagen_compartida) != 0) {
-        handle_err(FILE_ERROR);
+    // Lanzar el proceso Publicador
+    pid_t pid_publicador = fork();
+    if (pid_publicador == 0) {
+        execl("./publicador", "./publicador", ruta_entrada, NULL);
+        perror("Error al ejecutar el publicador");
+        exit(1);
     }
 
-    // asignar mem para img salida
-    BMP_Image *imageOut = malloc(sizeof(BMP_Image));
-    if (!imageOut)
-        handle_err(MEMORY_ERROR);
+    // Esperar a que el Publicador termine
+    waitpid(pid_publicador, NULL, 0);
 
-    // verificar y copiar img entrada
-    if (!checkBMPValid(&imagen_compartida->header))
-        handle_err(VALID_ERROR);
+    // Abrir la memoria compartida
+    int shm_fd = shm_open(SHM_NAME, O_RDWR, 0666);
+    if (shm_fd == -1) {
+        perror("Error al abrir la memoria compartida");
+        exit(1);
+    }
 
-    transBMP(imagen_compartida, imageOut);
-    if (!checkBMPValid(&imageOut->header))
-        handle_err(VALID_ERROR);
+    // Obtener el tamaño de la memoria compartida
+    struct stat shm_stat;
+    if (fstat(shm_fd, &shm_stat) == -1) {
+        perror("Error al obtener el tamaño de la memoria compartida");
+        close(shm_fd);
+        exit(1);
+    }
 
-    // aplicar filtros en paralelo
-    apply_realzador_parallel(imagen_compartida, imageOut, THREAD_NUM);
-    apply_desenfocador_parallel(imagen_compartida, imageOut, THREAD_NUM);
+    // Mapear la memoria compartida
+    BMP_Image *imagen_compartida = mmap(NULL, shm_stat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    if (imagen_compartida == MAP_FAILED) {
+        perror("Error al mapear la memoria compartida");
+        close(shm_fd);
+        exit(1);
+    }
 
-    // guardar img combinada
-    writeImage((char *)ruta_salida, imageOut);
+    // Lanzar el proceso Desenfocador
+    pid_t pid_desenfocador = fork();
+    if (pid_desenfocador == 0) {
+        execl("./desenfocador", "./desenfocador", NULL);
+        perror("Error al ejecutar el desenfocador");
+        exit(1);
+    }
 
-    // free mem
-    freeImage(imageOut);
+    // Esperar a que el Desenfocador termine
+    waitpid(pid_desenfocador, NULL, 0);
 
-    // unmap shm
-    size_t shm_size = sizeof(BMP_Image) + imagen_compartida->header.imagesize;
-    munmap(imagen_compartida, shm_size);
+    // Lanzar el proceso Realzador
+    pid_t pid_realzador = fork();
+    if (pid_realzador == 0) {
+        execl("./realzador", "./realzador", NULL);
+        perror("Error al ejecutar el realzador");
+        exit(1);
+    }
 
+    // Esperar a que el Realzador termine
+    waitpid(pid_realzador, NULL, 0);
+
+    // Guardar la imagen procesada
+    writeImage((char *)ruta_salida, imagen_compartida);
+
+    // Limpiar la memoria compartida
+    munmap(imagen_compartida, shm_stat.st_size);
+    close(shm_fd);
     shm_unlink(SHM_NAME);
+
+    printf("Imagen procesada guardada en: %s\n", ruta_salida);
 
     return 0;
 }
