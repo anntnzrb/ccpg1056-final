@@ -13,45 +13,40 @@ void apply_filter_parallel(BMP_Image *imageIn, BMP_Image *imageOut,
   printf("Aplicando filtro con %d threads\n", numThreads);
 #endif
 
-  // asignar mem para threads y params
+  // Asignar memoria para hilos y parámetros
   pthread_t *threads = malloc(numThreads * sizeof(pthread_t));
   filter_parameters *params = malloc(numThreads * sizeof(filter_parameters));
 
-  // calc distribucion de filas entre threads
+  // Calcular distribución de filas entre hilos
   const int height_px = imageIn->norm_height;
   const int rowsPerThread = height_px / numThreads;
   int remainingRows = height_px % numThreads;
   int startRow = 0;
-  int endRow;
 
   for (int i = 0; i < numThreads; i++) {
-    endRow = startRow + rowsPerThread;
-
-    // si hay resto, se le suma 1 a los ultimos threads
+    int endRow = startRow + rowsPerThread + (remainingRows > 0 ? 1 : 0);
     if (remainingRows > 0) {
-      endRow++;
       remainingRows--;
     }
 
-    // settear params para cada thread
+    // Configurar parámetros para cada hilo
     params[i] = (filter_parameters){.imageIn = imageIn,
                                     .imageOut = imageOut,
                                     .startRow = startRow,
                                     .endRow = endRow,
                                     .applyFilter = applyFilter};
 
-    // crear thread y pasarle la fn y params
+    // Crear hilo y pasarle la función y parámetros
     pthread_create(&threads[i], NULL, filterThreadWorker, &params[i]);
 
     startRow = endRow;
   }
 
-  // esperar demas threads
+  // Esperar a que todos los hilos terminen
   for (int i = 0; i < numThreads; i++) {
     pthread_join(threads[i], NULL);
   }
 
-  // free mem
   free(threads);
   free(params);
 }

@@ -2,12 +2,13 @@
 #include "common_filter.h"
 #include <stdlib.h>
 
-// filtro para detectar bordes en el eje X e Y
+// Filtro para detectar bordes en el eje X e Y
 int edgeFilterX[FILTER_SIZE][FILTER_SIZE] = {
     {-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}};
 int edgeFilterY[FILTER_SIZE][FILTER_SIZE] = {
     {-1, -2, -1}, {0, 0, 0}, {1, 2, 1}};
 
+// Calcular valor de píxel para detección de bordes
 int calcEdgePixelVal(Pixel **imagePixels, int posX, int posY, int imgWidth,
                      int imgHeight, RGBChannel color) {
   int pixelValueX = 0;
@@ -51,9 +52,18 @@ int calcEdgePixelVal(Pixel **imagePixels, int posX, int posY, int imgWidth,
 void apply_realzador(BMP_Image *imageIn, BMP_Image *imageOut, int startRow, int endRow) {
   int middleRow = imageIn->norm_height / 2;
   
-  for (int row = MAX(startRow, middleRow); row < endRow; row++) {
+  int actualStartRow = MAX(startRow, middleRow);
+  int actualEndRow = endRow;
+  
+  // Saltar si está fuera del rango de procesamiento
+  if (actualEndRow <= middleRow) {
+    printf("Realzador saltando filas %d a %d (por debajo de la fila media %d)\n", startRow, endRow, middleRow);
+    return;
+  }
+  
+  // Procesar solo la mitad inferior de la imagen
+  for (int row = actualStartRow; row < actualEndRow; row++) {
     for (int col = 0; col < imageIn->header.width_px; col++) {
-      // aplicar filtro de realzador a la mitad inferior
       imageOut->pixels[row][col].red = calcEdgePixelVal(
           imageIn->pixels, row, col, imageIn->header.width_px,
           imageIn->norm_height, RED);
@@ -66,6 +76,8 @@ void apply_realzador(BMP_Image *imageIn, BMP_Image *imageOut, int startRow, int 
       imageOut->pixels[row][col].alpha = 255;
     }
   }
+  
+  printf("Realzador finished processing. Rows: %d to %d (should be >= %d)\n", actualStartRow, actualEndRow - 1, middleRow);
 }
 
 void apply_realzador_parallel(BMP_Image *imageIn, BMP_Image *imageOut,
