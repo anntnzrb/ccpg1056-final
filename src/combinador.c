@@ -34,17 +34,22 @@ int all_children_exited(void);
 
 void signal_handler(int signum) {
     static int completed_filters = 0;
+    static int image_ready = 0;
+    static int publicador_exited = 0;
     printf("Received signal: %d\n", signum);
     
     if (signum == SIGUSR1) {
-        if (all_children_exited()) {
-            printf("All child processes have exited. Terminating parent process.\n");
-            cleanup_shared_memory(0);
-            exit(0);
+        if (!publicador_exited) {
+            if (!image_ready) {
+                printf("Image ready, starting filters\n");
+                image_ready = 1;
+                kill(des_pid, SIGUSR1);
+                kill(real_pid, SIGUSR1);
+            } else {
+                printf("Publicador process has finished. Waiting for filters to complete.\n");
+                publicador_exited = 1;
+            }
         }
-        printf("Image ready, starting filters\n");
-        kill(des_pid, SIGUSR1);
-        kill(real_pid, SIGUSR1);
     } else if (signum == SIGUSR2) {
         completed_filters++;
         printf("Filter completed. Total completed: %d\n", completed_filters);
@@ -57,9 +62,18 @@ void signal_handler(int signum) {
 
             writeImage((char *)ruta_salida, imagen_compartida);
             completed_filters = 0;
+            image_ready = 0;
             munmap(imagen_compartida, shm_size);
             printf("Imagen procesada y guardada en: %s\n", ruta_salida);
-            kill(pub_pid, SIGUSR1);
+            if (!publicador_exited) {
+                kill(pub_pid, SIGUSR1);
+            } else {
+                // If publicador has exited, terminate filter processes
+                kill(des_pid, SIGTERM);
+                kill(real_pid, SIGTERM);
+                // Signal parent to check for termination
+                kill(getpid(), SIGUSR1);
+            }
         }
     }
 }
@@ -179,8 +193,16 @@ main(int argc, char **argv) {
     // Desenfocador process
     des_pid = fork();
     if (des_pid == 0) {
+        signal(SIGTERM, exit);
+        sigset_t mask;
+        sigemptyset(&mask);
+        sigaddset(&mask, SIGUSR1);
+        sigprocmask(SIG_BLOCK, &mask, NULL);
+        
         while (1) {
-            pause(); // Wait for signal
+            int sig;
+            sigwait(&mask, &sig);
+            printf("Desenfocador received signal\n");
             BMP_Image *imagen_compartida = mmap(NULL, shm_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
             if (imagen_compartida == MAP_FAILED) {
                 handle_err(MEMORY_ERROR);
@@ -194,8 +216,16 @@ main(int argc, char **argv) {
     // Realzador process
     real_pid = fork();
     if (real_pid == 0) {
+        signal(SIGTERM, exit);
+        sigset_t mask;
+        sigemptyset(&mask);
+        sigaddset(&mask, SIGUSR1);
+        sigprocmask(SIG_BLOCK, &mask, NULL);
+        
         while (1) {
-            pause(); // Wait for signal
+            int sig;
+            sigwait(&mask, &sig);
+            printf("Realzador received signal\n");
             BMP_Image *imagen_compartida = mmap(NULL, shm_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
             if (imagen_compartida == MAP_FAILED) {
                 handle_err(MEMORY_ERROR);
@@ -218,6 +248,12 @@ main(int argc, char **argv) {
         int sig;
         sigwait(&mask, &sig);
         signal_handler(sig);
+        
+        // Check if all child processes have exited
+        if (all_children_exited()) {
+            printf("All child processes have exited. Terminating parent process.\n");
+            break;
+        }
     }
 
     // Clean up
