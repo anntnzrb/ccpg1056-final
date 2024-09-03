@@ -23,6 +23,8 @@ void *shm_ptr = NULL;
 size_t shm_size = 0;
 pid_t pub_pid, des_pid, real_pid;
 
+int completed_filters = 0;
+
 static void
 handle_err(const int error_code) {
     printError(error_code);
@@ -33,7 +35,6 @@ void cleanup_shared_memory(int signum);
 int all_children_exited(void);
 
 void signal_handler(int signum) {
-    static int completed_filters = 0;
     static int image_ready = 0;
     static int publicador_exited = 0;
     printf("Received signal: %d\n", signum);
@@ -61,7 +62,6 @@ void signal_handler(int signum) {
             }
 
             writeImage((char *)ruta_salida, imagen_compartida);
-            completed_filters = 0;
             image_ready = 0;
             munmap(imagen_compartida, shm_size);
             printf("Imagen procesada y guardada en: %s\n", ruta_salida);
@@ -71,8 +71,6 @@ void signal_handler(int signum) {
                 // If publicador has exited, terminate filter processes
                 kill(des_pid, SIGTERM);
                 kill(real_pid, SIGTERM);
-                // Signal parent to check for termination
-                kill(getpid(), SIGUSR1);
             }
         }
     }
@@ -112,7 +110,9 @@ main(int argc, char **argv) {
         exit(1);
     }
 
-    ruta_salida = argv[1];
+    char output_path[256];
+    snprintf(output_path, sizeof(output_path), "%s.bmp", argv[1]);
+    ruta_salida = output_path;
     int num_threads = atoi(argv[2]);
 
     if (num_threads <= 0) {
@@ -249,10 +249,15 @@ main(int argc, char **argv) {
         sigwait(&mask, &sig);
         signal_handler(sig);
         
-        // Check if all child processes have exited
-        if (all_children_exited()) {
-            printf("All child processes have exited. Terminating parent process.\n");
-            break;
+        if (completed_filters == 2) {
+            printf("Image processing complete.\n");
+            completed_filters = 0;
+            
+            // Check if the publicador process has exited
+            if (waitpid(pub_pid, NULL, WNOHANG) == pub_pid) {
+                printf("Publicador process has exited. Terminating parent process.\n");
+                break;
+            }
         }
     }
 
