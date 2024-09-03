@@ -46,6 +46,19 @@
             c.enable = true;
           };
 
+          devcontainer = {
+            enable = true;
+            settings = {
+              image = "ghcr.io/cachix/devenv:latest";
+              updateContentCommand = "direnv reload";
+              customizations.vscode.extensions = [
+                "mkhl.direnv"
+                "jnoortheen.nix-ide"
+                "ms-vscode.cpptools-extension-pack"
+              ];
+            };
+          };
+
           packages = with pkgs; [
             config.treefmt.build.wrapper
 
