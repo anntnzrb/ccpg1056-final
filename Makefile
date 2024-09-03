@@ -14,7 +14,7 @@ OBJS = $(SRC_DIR)/bmp.o $(SRC_DIR)/realzador.o $(SRC_DIR)/publicador.o $(SRC_DIR
 all: clean combinador_test
 
 debug: CFLAGS += -DDEBUG_REALZADOR -DDEBUG_DESENFOCADOR -DDEBUG_COMMON_FILTER
-debug: clean combinador_test
+debug: all
 
 %.o: %.c
 	@$(CC) $(CFLAGS) -c -o $@ $<

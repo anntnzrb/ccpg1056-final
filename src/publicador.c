@@ -9,8 +9,6 @@
 #include "bmp.h"
 #include "publicador.h"
 
-#define DEBUG_PUBLISHER 0
-
 // nombre de shared mem
 #define SHM_NAME "/bmp_imagen_compartida"
 
