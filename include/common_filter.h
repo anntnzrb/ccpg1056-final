@@ -12,23 +12,23 @@
 
 // struct para pasar params
 typedef struct {
-  BMP_Image *imageIn;
-  BMP_Image *imageOut;
-  int startRow;
-  int endRow;
-  void (*applyFilter)(BMP_Image *, BMP_Image *, int, int);
+    BMP_Image *imageIn;
+    BMP_Image *imageOut;
+    int startRow;
+    int endRow;
+    void (*applyFilter)(BMP_Image *, BMP_Image *, int, int);
 } filter_parameters;
 
 // enum de RGB
 typedef enum { RED, GREEN, BLUE } RGBChannel;
 
 // fn para aplicar filtro en paralelo
-void apply_filter_parallel(BMP_Image *imageIn, BMP_Image *imageOut,
-                         int numThreads,
-                         void (*applyFilter)(BMP_Image *, BMP_Image *, int,
-                                             int));
+void
+apply_filter_parallel(BMP_Image *imageIn, BMP_Image *imageOut, int numThreads,
+                      void (*applyFilter)(BMP_Image *, BMP_Image *, int, int));
 
 // fn para cada thread independiente
-void *filterThreadWorker(void *args);
+void *
+filterThreadWorker(void *args);
 
 #endif // COMMON_FILTER_H

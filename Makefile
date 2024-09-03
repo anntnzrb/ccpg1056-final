@@ -9,9 +9,12 @@ endif
 
 SRC_DIR = src
 TESTCASES_DIR = testcases
-OBJS = $(SRC_DIR)/bmp.o $(SRC_DIR)/realzador.o $(SRC_DIR)/publicador.o $(SRC_DIR)/desenfocador.o $(SRC_DIR)/common_filter.o $(SRC_DIR)/combinador.o
+OBJS = $(SRC_DIR)/bmp.o $(SRC_DIR)/realzador.o $(SRC_DIR)/publicador.o $(SRC_DIR)/desenfocador.o $(SRC_DIR)/common_filter.o $(SRC_DIR)/combinador.o $(SRC_DIR)/util.o
 
 all: clean combinador_test
+
+debug: CFLAGS += -DDEBUG_REALZADOR -DDEBUG_DESENFOCADOR -DDEBUG_COMMON_FILTER
+debug: clean combinador_test
 
 %.o: %.c
 	@$(CC) $(CFLAGS) -c -o $@ $<
@@ -23,6 +26,7 @@ combinador_test: $(SRC_DIR)/combinador.o $(OBJS)
 	@./$@ testcases/wizard.bmp outputs/wizard_combinador_out.bmp
 	@./$@ testcases/airplane.bmp outputs/airplane_combinador_out.bmp
 	@./$@ testcases/car.bmp outputs/car_combinador_out.bmp
+
 docs:
 	@printf "Building docs...\\n"
 	typst compile --root docs docs/main.typ 'reporte-Threads.pdf'

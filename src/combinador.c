@@ -1,24 +1,27 @@
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
 #include "bmp.h"
+#include "desenfocador.h"
 #include "publicador.h"
 #include "realzador.h"
-#include "desenfocador.h"
 
 #define THREAD_NUM 8
 #define SHM_NAME "/bmp_imagen_compartida"
 
-static void handle_err(const int error_code) {
+static void
+handle_err(const int error_code) {
     printError(error_code);
     exit(EXIT_FAILURE);
 }
 
-int main(int argc, char **argv) {
+int
+main(int argc, char **argv) {
     if (argc != 3) {
         fprintf(stderr, "Uso: %s <ruta_entrada> <ruta_salida>\n", argv[0]);
         exit(1);
