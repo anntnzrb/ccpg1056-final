@@ -19,7 +19,7 @@ publicar_imagen(const char *nombre_archivo, BMP_Image **imagen_compartida) {
     // Abrir archivo BMP en modo lectura binaria
     FILE *archivo = fopen(nombre_archivo, "rb");
     if (!archivo) {
-        perror("Error al abrir el archivo");
+        fprintf(stderr, "Error: No se pudo abrir el archivo '%s'\n", nombre_archivo);
         return -1;
     }
 
@@ -40,8 +40,9 @@ publicar_imagen(const char *nombre_archivo, BMP_Image **imagen_compartida) {
 #endif
 
     // Leer imagen
-    if (readImage(archivo, imagen), imagen->pixels == NULL) {
-        fprintf(stderr, "Error al leer la imagen BMP\n");
+    readImage(archivo, imagen);
+    if (imagen->pixels == NULL) {
+        fprintf(stderr, "Error: No se pudo leer la imagen '%s'\n", nombre_archivo);
         fclose(archivo);
         free(imagen);
         return -1;
@@ -53,40 +54,49 @@ publicar_imagen(const char *nombre_archivo, BMP_Image **imagen_compartida) {
 
     fclose(archivo);
 
-    // Crear/abrir memoria compartida
-    int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
+    // Abrir memoria compartida existente
+    int shm_fd = shm_open(SHM_NAME, O_RDWR, 0666);
     if (shm_fd == -1) {
-        perror("Error al crear memoria compartida");
+        perror("Error al abrir memoria compartida");
         free(imagen);
         return -1;
     }
 
 #if DEBUG_PUBLISHER
-    printf("Debug (%s): Memoria compartida creada\n", nombre_archivo);
+    printf("Debug (%s): Memoria compartida abierta\n", nombre_archivo);
 #endif
 
     // Calcular tamaño total necesario para memoria compartida
-    // tam = tam de la struct + tam de los datos de los pixeles
-    size_t shm_size = sizeof(BMP_Image) + imagen->header.imagesize;
-    if (ftruncate(shm_fd, shm_size) == -1) {
-        perror("Error al establecer el tamaño de la memoria compartida");
+    size_t required_shm_size = sizeof(size_t) + sizeof(BMP_Image) + imagen->header.imagesize;
+    printf("Debug: Required image size = %zu bytes\n", required_shm_size);
+
+    // Obtener el tamaño actual de la memoria compartida
+    struct stat shm_stat;
+    if (fstat(shm_fd, &shm_stat) == -1) {
+        perror("Error al obtener el tamaño actual de la memoria compartida");
         free(imagen);
-        shm_unlink(SHM_NAME);
+        close(shm_fd);
         return -1;
     }
+    size_t current_shm_size = shm_stat.st_size;
 
-#if DEBUG_PUBLISHER
-    printf("Debug (%s): Tamaño de memoria compartida establecido\n",
-           nombre_archivo);
-#endif
+    // Ajustar el tamaño de la memoria compartida si es necesario
+    if (required_shm_size > current_shm_size) {
+        if (ftruncate(shm_fd, required_shm_size) == -1) {
+            perror("Error al ajustar el tamaño de la memoria compartida");
+            free(imagen);
+            close(shm_fd);
+            return -1;
+        }
+        current_shm_size = required_shm_size;
+    }
 
-    // Mapear memoria compartida en el espacio de direcciones del proceso
-    void *ptr =
-        mmap(0, shm_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    if (ptr == MAP_FAILED) {
+    // Mapear la memoria compartida
+    void *shm_ptr = mmap(NULL, current_shm_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    if (shm_ptr == MAP_FAILED) {
         perror("Error al mapear la memoria compartida");
         free(imagen);
-        shm_unlink(SHM_NAME);
+        close(shm_fd);
         return -1;
     }
 
@@ -94,26 +104,29 @@ publicar_imagen(const char *nombre_archivo, BMP_Image **imagen_compartida) {
     printf("Debug (%s): Memoria compartida mapeada\n", nombre_archivo);
 #endif
 
-    // Copiar estructura BMP_Image a memoria compartida
-    memcpy(ptr, imagen, sizeof(BMP_Image));
-    // Copiar píxeles a memoria compartida
-    memcpy((char *)ptr + sizeof(BMP_Image), imagen->pixels,
-           imagen->header.imagesize);
+    // Actualizar el tamaño en la memoria compartida
+    *((size_t *)shm_ptr) = current_shm_size;
 
-#if DEBUG_PUBLISHER
-    printf("Debug (%s): Imagen copiada a memoria compartida\n",
-           nombre_archivo);
-#endif
+    // Copiar la imagen a la memoria compartida
+    *imagen_compartida = (BMP_Image *)((char *)shm_ptr + sizeof(size_t));
+    memcpy(*imagen_compartida, imagen, sizeof(BMP_Image));
+    memcpy((*imagen_compartida)->pixels, imagen->pixels, imagen->header.imagesize);
 
-    // Asignar puntero de shared mem al ptr de salida
-    *imagen_compartida = (BMP_Image *)ptr;
-
-    // free mem
+    // Liberar memoria
     free(imagen);
 
+    // Desmapear la memoria compartida
+    if (munmap(shm_ptr, current_shm_size) == -1) {
+        perror("Error al desmapear la memoria compartida");
+    }
+
+    // Cerrar el descriptor de archivo de memoria compartida
+    if (close(shm_fd) == -1) {
+        perror("Error al cerrar el descriptor de archivo de memoria compartida");
+    }
+
 #if DEBUG_PUBLISHER
-    printf("Debug (%s): publicar_imagen completado con éxito\n",
-           nombre_archivo);
+    printf("Debug (%s): publicar_imagen completado con éxito\n", nombre_archivo);
 #endif
 
     return 0;

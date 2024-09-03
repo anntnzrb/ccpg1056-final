@@ -9,23 +9,27 @@ endif
 
 SRC_DIR = src
 TESTCASES_DIR = testcases
-OBJS = $(SRC_DIR)/bmp.o $(SRC_DIR)/realzador.o $(SRC_DIR)/publicador.o $(SRC_DIR)/desenfocador.o $(SRC_DIR)/common_filter.o $(SRC_DIR)/combinador.o $(SRC_DIR)/util.o
+OBJS = $(SRC_DIR)/bmp.o $(SRC_DIR)/common_filter.o $(SRC_DIR)/util.o $(SRC_DIR)/publicador.o $(SRC_DIR)/desenfocador.o $(SRC_DIR)/realzador.o
 
-all: clean combinador_test
+all: clean combinador
 
 debug: CFLAGS += -DDEBUG_REALZADOR -DDEBUG_DESENFOCADOR -DDEBUG_COMMON_FILTER
-debug: clean combinador_test
+debug: all
 
 %.o: %.c
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
-combinador_test: $(SRC_DIR)/combinador.o $(OBJS)
-	@mkdir -p outputs
+combinador: $(SRC_DIR)/combinador.o $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-	@./$@ testcases/test0.bmp outputs/test0_combinador_out.bmp
-	@./$@ testcases/wizard.bmp outputs/wizard_combinador_out.bmp
-	@./$@ testcases/airplane.bmp outputs/airplane_combinador_out.bmp
-	@./$@ testcases/car.bmp outputs/car_combinador_out.bmp
+
+publicador: $(SRC_DIR)/publicador.o $(OBJS)
+	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+desenfocador: $(SRC_DIR)/desenfocador.o $(OBJS)
+	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+realzador: $(SRC_DIR)/realzador.o $(OBJS)
+	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 docs:
 	@printf "Building docs...\\n"
@@ -36,6 +40,6 @@ fmt:
 	@nix fmt
 
 clean:
-	rm -rf $(SRC_DIR)/*.o $(TESTCASES_DIR)/*.o $(SRC_DIR)/*.d combinador_test outputs
+	rm -rf $(SRC_DIR)/*.o $(TESTCASES_DIR)/*.o $(SRC_DIR)/*.d combinador publicador desenfocador realzador outputs
 
-.PHONY: all clean combinador_test docs fmt
+.PHONY: all clean debug combinador_test docs fmt
