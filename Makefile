@@ -7,6 +7,7 @@ COMMON_SRCS := filter_common.c bmp.c util.c
 COMMON_OBJS := $(addprefix $(OBJ_DIR)/,$(COMMON_SRCS:.c=.o))
 TARGETS := pipeline desenfocador realzador
 DOCS_DIR = docs
+REPORT_FILE = g7-reporte.pdf
 
 CC := cc
 CFLAGS := -Wall -Wextra -std=c99 -I$(INC_DIR) -pthread -Wno-pragma-pack
@@ -35,9 +36,13 @@ $(OBJ_DIR) outputs:
 
 docs:
 	@printf "Building docs...\\n"
-	typst compile --root $(DOCS_DIR) $(DOCS_DIR)/main.typ 'g7-reporte.pdf'
+	typst compile --root $(DOCS_DIR) $(DOCS_DIR)/main.typ $(REPORT_FILE)
+
+docs-watch:
+	@printf "Watching docs...\\n"
+	typst watch --root $(DOCS_DIR) $(DOCS_DIR)/main.typ $(REPORT_FILE)
 
 clean:
 	rm -Rf $(TARGETS) $(OBJ_DIR) outputs
 
-.PHONY: all clean docs
+.PHONY: all clean docs docs-watch
