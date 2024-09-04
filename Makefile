@@ -6,6 +6,7 @@ OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 COMMON_SRCS := filter_common.c bmp.c util.c
 COMMON_OBJS := $(addprefix $(OBJ_DIR)/,$(COMMON_SRCS:.c=.o))
 TARGETS := pipeline desenfocador realzador
+DOCS_DIR = docs
 
 CC := cc
 CFLAGS := -Wall -Wextra -std=c99 -I$(INC_DIR) -pthread -Wno-pragma-pack
@@ -32,7 +33,11 @@ desenfocador realzador: %: $(OBJ_DIR)/%.o $(COMMON_OBJS)
 $(OBJ_DIR) outputs:
 	mkdir -p $@
 
+docs:
+	@printf "Building docs...\\n"
+	typst compile --root $(DOCS_DIR) $(DOCS_DIR)/main.typ 'g7-reporte.pdf'
+
 clean:
 	rm -Rf $(TARGETS) $(OBJ_DIR) outputs
 
-.PHONY: all clean
+.PHONY: all clean docs
