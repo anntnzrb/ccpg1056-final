@@ -77,8 +77,8 @@ apply_filter(BMP_Image *img, int num_threads, const char *filter_name,
 }
 
 int
-process_image(const char *filename, const char *output_path, BMP_Image *image, BMP_Image *new_image,
-              int num_threads) {
+process_image(const char *filename, const char *output_path, BMP_Image *image,
+              BMP_Image *new_image, int num_threads) {
     FILE *source = fopen(filename, "rb");
     if (!source || readImage(source, image) != 0 ||
         !checkBMPValid(&image->header)) {
@@ -174,7 +174,8 @@ process_image(const char *filename, const char *output_path, BMP_Image *image, B
     }
 
     // exito :)
-    printf("=== Imagen procesada y guardada correctamente en %s ===\n\n", output_path);
+    printf("=== Imagen procesada y guardada correctamente en %s ===\n\n",
+           output_path);
 
     // clean up todo
     fclose(source);
@@ -219,7 +220,8 @@ main(int argc, char **argv) {
 
         // procesar img
         BMP_Image image = {0}, new_image = {0};
-        if (process_image(filename, output_path, &image, &new_image, num_threads) != 0) {
+        if (process_image(filename, output_path, &image, &new_image,
+                          num_threads) != 0) {
             fprintf(stderr, "Error procesando la imagen %s\n", filename);
         }
 

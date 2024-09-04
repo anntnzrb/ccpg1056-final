@@ -9,8 +9,8 @@
  * @brief Procesa una imagen utilizando un número específico de hilos.
  */
 int
-process_image(const char *filename, const char *output_path, BMP_Image *image, BMP_Image *new_image,
-              int num_threads);
+process_image(const char *filename, const char *output_path, BMP_Image *image,
+              BMP_Image *new_image, int num_threads);
 
 /**
  * @brief Copia los datos de la imagen a la memoria compartida.
