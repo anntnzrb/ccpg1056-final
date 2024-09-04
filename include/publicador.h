@@ -9,7 +9,7 @@
  * @brief Procesa una imagen utilizando un número específico de hilos.
  */
 int
-process_image(const char *filename, BMP_Image *image, BMP_Image *new_image,
+process_image(const char *filename, const char *output_path, BMP_Image *image, BMP_Image *new_image,
               int num_threads);
 
 /**

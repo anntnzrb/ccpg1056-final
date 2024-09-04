@@ -77,7 +77,7 @@ apply_filter(BMP_Image *img, int num_threads, const char *filter_name,
 }
 
 int
-process_image(const char *filename, BMP_Image *image, BMP_Image *new_image,
+process_image(const char *filename, const char *output_path, BMP_Image *image, BMP_Image *new_image,
               int num_threads) {
     FILE *source = fopen(filename, "rb");
     if (!source || readImage(source, image) != 0 ||
@@ -164,9 +164,9 @@ process_image(const char *filename, BMP_Image *image, BMP_Image *new_image,
     copy_image_data(output_pixels_image, new_image, 0);
 
     // escribir la imagen procesada en un archivo
-    FILE *dest = fopen("outputs/filtered.bmp", "wb");
+    FILE *dest = fopen(output_path, "wb");
     if (!dest || writeImage(dest, new_image) != 0) {
-        fprintf(stderr, "Error escribiendo la imagen\n");
+        fprintf(stderr, "Error escribiendo la imagen en %s\n", output_path);
         if (dest)
             fclose(dest);
         fclose(source);
@@ -174,7 +174,7 @@ process_image(const char *filename, BMP_Image *image, BMP_Image *new_image,
     }
 
     // exito :)
-    printf("=== Imagen procesada y guardada correctamente ===\n\n");
+    printf("=== Imagen procesada y guardada correctamente en %s ===\n\n", output_path);
 
     // clean up todo
     fclose(source);
@@ -191,11 +191,12 @@ process_image(const char *filename, BMP_Image *image, BMP_Image *new_image,
 
 int
 main(int argc, char **argv) {
-    if (argc != 2 || (atoi(argv[1])) <= 0) {
-        die("Uso: %s <hilos>", argv[0]);
+    if (argc != 3 || (atoi(argv[1])) <= 0) {
+        die("Uso: %s <hilos> <ruta_salida>", argv[0]);
     }
 
     int num_threads = atoi(argv[1]);
+    const char *output_path = argv[2];
     char filename[FILENAME_MAX_SIZE] = {0};
 
     while (1) {
@@ -218,7 +219,7 @@ main(int argc, char **argv) {
 
         // procesar img
         BMP_Image image = {0}, new_image = {0};
-        if (process_image(filename, &image, &new_image, num_threads) != 0) {
+        if (process_image(filename, output_path, &image, &new_image, num_threads) != 0) {
             fprintf(stderr, "Error procesando la imagen %s\n", filename);
         }
 
