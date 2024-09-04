@@ -38,6 +38,11 @@ etapas, garantizando que:
 - Al finalizar, se combinen las dos porciones procesadas de la imagen en una sola
   y se guarde en disco
 
+// https://www.mermaidchart.com/app/projects/bed189c5-7739-4bfb-a9ad-8aadd6fc612d/diagrams/fc9137a0-e48e-4a9b-a93b-2b27f80860a7/version/v0.1/edit
+#figure(
+  image("assets/uml.png", width: 55%), caption: "Diagrama de Actividades del Pipeline",
+)
+
 #pagebreak()
 
 = Limitaciones y Resoluciónes
@@ -60,9 +65,8 @@ programa funcione como fue originalmente intencionado.
 #pagebreak()
 
 = Salidas de Pantalla y Ejecución
-//#figure(
-//  image("assets/cap_test.png", width: 60%), caption: "Test positivo de la app",
-//)
+
+#lorem(10)
 
 #pagebreak()
 
