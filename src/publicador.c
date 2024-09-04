@@ -11,7 +11,7 @@
 #include "publicador.h"
 #include "util.h"
 
-#define FILENAME_MAX_SIZE 100
+#define FILENAME_MAX_SIZE 128
 
 int image_fd = 0, output_fd = 0;
 void *input_pixels_image = NULL, *output_pixels_image = NULL;
@@ -195,20 +195,41 @@ main(int argc, char **argv) {
         die("Uso: %s <hilos>", argv[0]);
     }
 
+    int num_threads = atoi(argv[1]);
     char filename[FILENAME_MAX_SIZE] = {0};
+
     while (1) {
-        printf("Ingrese la ruta de la imagen: ");
-        if (fgets(filename, sizeof(filename), stdin)) {
-            filename[strcspn(filename, "\n")] = 0;
-            FILE *sc = fopen(filename, "rb");
-            if (sc) {
-                fclose(sc);
-                break;
+        while (1) {
+            printf("Ingrese la ruta de la imagen (o 'q' para salir): ");
+            if (fgets(filename, sizeof(filename), stdin)) {
+                filename[strcspn(filename, "\n")] = 0;
+                if (strcmp(filename, "q") == 0) {
+                    printf("Saliendo del programa...\n");
+                    return 0;
+                }
+                FILE *sc = fopen(filename, "rb");
+                if (sc) {
+                    fclose(sc);
+                    break;
+                }
             }
+            fprintf(stderr, "Ingrese una ruta válida...\n");
         }
-        fprintf(stderr, "Ingrese una ruta válida...\n");
+
+        // procesar img
+        BMP_Image image = {0}, new_image = {0};
+        if (process_image(filename, &image, &new_image, num_threads) != 0) {
+            fprintf(stderr, "Error procesando la imagen %s\n", filename);
+        }
+
+        // clean up
+        for (int i = 0; i < image.norm_height; i++) {
+            free(image.pixels[i]);
+            free(new_image.pixels[i]);
+        }
+        free(image.pixels);
+        free(new_image.pixels);
     }
 
-    BMP_Image image = {0}, new_image = {0};
-    return process_image(filename, &image, &new_image, atoi(argv[1]));
+    return 0;
 }
