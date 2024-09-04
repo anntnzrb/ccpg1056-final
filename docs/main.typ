@@ -13,7 +13,32 @@
 
 = Problemática a Resolver
 
-#lorem(10) @jmagalla_os-espol
+El objetivo principal de este proyecto es aplicar técnicas de sincronización y
+comunicación entre procesos que han sido revisadas en clase. Esta solución debe
+implementar un pipeline de procesamiento de imágenes utilizando comunicación
+entre procesos (*IPC*) y técnicas de sincronización en *C*.
+
+La problemática específica consiste en diseñar e implementar un sistema
+compuesto por *tres programas principales* que trabajen de forma concurrente:
+
+1. *Publicador*: lee una imagen de entrada en formato _BMP_ y la almacena en un
+  recurso de memoria compartida
+
+2. *Desenfocador*: aplica un filtro de desenfoque (*blur*) a la primera mitad de la
+  imagen
+
+3. *Realzador*: aplica un kernel de realce de bordes (*edge detection*) a la
+  segunda mitad de la imagen
+
+Estos programas deben sincronizarse adecuadamente para procesar la imagen en
+etapas, garantizando que:
+
+- El *desenfocador* y el *realzador* se ejecuten como _procesos independientes_ una
+  vez que el *publicador* haya cargado la imagen en memoria compartida
+- Al finalizar, se combinen las dos porciones procesadas de la imagen en una sola
+  y se guarde en disco
+
+#pagebreak()
 
 = Limitaciones y Resoluciónes
 Durante el desarrollo del proyecto se presentaron aalgunas limitaciones, cada
