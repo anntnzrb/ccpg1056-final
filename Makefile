@@ -1,41 +1,38 @@
-CC = gcc
-CFLAGS = -Wall -Wextra -std=c99 -Iinclude -pthread
-LDFLAGS = -pthread
+SRC_DIR := src
+INC_DIR := include
+OBJ_DIR := obj
+SRCS := $(wildcard $(SRC_DIR)/*.c)
+OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
+COMMON_SRCS := filter_common.c bmp.c util.c
+COMMON_OBJS := $(addprefix $(OBJ_DIR)/,$(COMMON_SRCS:.c=.o))
+TARGETS := pipeline desenfocador realzador
 
-# linux & darwin settings
-ifeq ($(UNAME_S),Linux)
+CC := cc
+CFLAGS := -Wall -Wextra -std=c99 -I$(INC_DIR) -pthread -Wno-pragma-pack
+LDFLAGS := -pthread
+
+# OS-specific settings
+# -lrt is unavailable on darwin
+ifeq ($(shell uname -s),Linux)
     LDFLAGS += -lrt
 endif
 
-SRC_DIR = src
-TESTCASES_DIR = testcases
-OBJS = $(SRC_DIR)/bmp.o $(SRC_DIR)/realzador.o $(SRC_DIR)/publicador.o $(SRC_DIR)/desenfocador.o $(SRC_DIR)/common_filter.o $(SRC_DIR)/combinador.o $(SRC_DIR)/util.o
+all: clean $(TARGETS) | outputs
 
-all: clean combinador_test
+$(TARGETS): | outputs $(OBJ_DIR)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
-debug: CFLAGS += -DDEBUG_REALZADOR -DDEBUG_DESENFOCADOR -DDEBUG_COMMON_FILTER
-debug: all
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-%.o: %.c
-	@$(CC) $(CFLAGS) -c -o $@ $<
+pipeline: $(filter-out $(OBJ_DIR)/desenfocador.o $(OBJ_DIR)/realzador.o, $(OBJS))
 
-combinador_test: $(SRC_DIR)/combinador.o $(OBJS)
-	@mkdir -p outputs
-	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-	@./$@ testcases/test0.bmp outputs/test0_combinador_out.bmp
-	@./$@ testcases/wizard.bmp outputs/wizard_combinador_out.bmp
-	@./$@ testcases/airplane.bmp outputs/airplane_combinador_out.bmp
-	@./$@ testcases/car.bmp outputs/car_combinador_out.bmp
+desenfocador realzador: %: $(OBJ_DIR)/%.o $(COMMON_OBJS)
 
-docs:
-	@printf "Building docs...\\n"
-	typst compile --root docs docs/main.typ 'reporte-Threads.pdf'
-
-fmt:
-	@printf "Formatting src tree...\\n"
-	@nix fmt
+$(OBJ_DIR) outputs:
+	mkdir -p $@
 
 clean:
-	rm -rf $(SRC_DIR)/*.o $(TESTCASES_DIR)/*.o $(SRC_DIR)/*.d combinador_test outputs
+	rm -Rf $(TARGETS) $(OBJ_DIR) outputs
 
-.PHONY: all clean combinador_test docs fmt
+.PHONY: all clean

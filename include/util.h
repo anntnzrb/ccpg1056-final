@@ -1,18 +1,15 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include <stdio.h>
+#include <stdarg.h>
 
-#if defined(DEBUG_REALZADOR) || defined(DEBUG_DESENFOCADOR) ||                \
-    defined(DEBUG_COMMON_FILTER)
-#define DEBUG_PRINT(prefix, fmt, ...)                                         \
-    do {                                                                      \
-        fprintf(stdout, "%s: " fmt, prefix, ##__VA_ARGS__);                   \
-    } while (0)
-#else
-#define DEBUG_PRINT(prefix, fmt, ...)                                         \
-    do {                                                                      \
-    } while (0)
-#endif
+/**
+ * @brief Termina el programa con un mensaje de error.
+ *
+ * Esta función imprime un mensaje de error formateado y termina
+ * la ejecución del programa. Es útil para manejar errores fatales.
+ */
+void
+die(const char *format, ...);
 
 #endif // UTIL_H

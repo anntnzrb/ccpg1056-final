@@ -3,9 +3,10 @@
 .devenv
 result
 outputs/
-main
 instructions.txt
-combinador_test
+pipeline
+desenfocador
+realzador
 
 ### C ###
 # Prerequisites

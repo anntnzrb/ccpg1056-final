@@ -1,101 +1,38 @@
-#include <pthread.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "filter_common.h"
 #include "util.h"
 
-#include "common_filter.h"
-#include "desenfocador.h"
+static const int filter[FILTER_SIZE][FILTER_SIZE] = {
+    {1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
 
-// Matriz 2D que representa el filtro que se aplica a la imagen
-int boxFilter[FILTER_SIZE][FILTER_SIZE] = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
-
-// Calcular valor de píxel para un canal de color
 int
-calcPixelVal(Pixel **imagePixels, int posX, int posY, int imgWidth,
-             int imgHeight, RGBChannel color) {
-    int pixelValue = 0;
-    // iterar sobre el filtro (matriz 3x3)
-    for (int offsetX = 0; offsetX < FILTER_SIZE; offsetX++) {
-        for (int offsetY = 0; offsetY < FILTER_SIZE; offsetY++) {
-            int adjustedX = posX - FILTER_SIZE / 2 + offsetX;
-            int adjustedY = posY - FILTER_SIZE / 2 + offsetY;
-
-            // asegurar que X e Y estén dentro de los límites
-            adjustedX = MAX(0, MIN(adjustedX, imgHeight - 1));
-            adjustedY = MAX(0, MIN(adjustedY, imgWidth - 1));
-
-            // sumar valores de píxeles basados en el canal de color
-            switch (color) {
-            case RED:
-                pixelValue += imagePixels[adjustedX][adjustedY].red *
-                              boxFilter[offsetX][offsetY];
-                break;
-            case GREEN:
-                pixelValue += imagePixels[adjustedX][adjustedY].green *
-                              boxFilter[offsetX][offsetY];
-                break;
-            case BLUE:
-                pixelValue += imagePixels[adjustedX][adjustedY].blue *
-                              boxFilter[offsetX][offsetY];
-                break;
-            }
-        }
+main(int argc, char **argv) {
+    if (argc != 6) {
+        die("Uso: %s <fila_inicio> <fila_fin> <alto> <ancho> <hilos>",
+            argv[0]);
     }
 
-    return pixelValue;
-}
+    int fila_inicio = atoi(argv[1]);
+    int fila_fin = atoi(argv[2]);
+    int alto = atoi(argv[3]);
+    int ancho = atoi(argv[4]);
+    int hilos = atoi(argv[5]);
 
-void
-apply_desenfocador(BMP_Image *imageIn, BMP_Image *imageOut, int startRow,
-                   int endRow) {
-    int middleRow = imageIn->norm_height / 2;
-
-    int actualStartRow = startRow;
-    int actualEndRow = MIN(endRow, middleRow);
-
-    // Saltar si está fuera del rango de procesamiento
-    if (actualStartRow >= middleRow) {
-#if DEBUG_DESENFOCADOR
-        DEBUG_PRINT("DESENFOCADOR",
-                    "skipping. [%d -> %d] (por encima de la "
-                    "fila media %d)\n",
-                    startRow, endRow, middleRow);
-#endif
-        return;
+    Pixel *image_data = (Pixel *)get_input_image(alto * ancho * sizeof(Pixel));
+    if (image_data == NULL) {
+        die("No se pudo recuperar la imagen compartida de entrada");
     }
 
-    // Procesar solo la mitad superior de la imagen
-    for (int row = actualStartRow; row < actualEndRow; row++) {
-        for (int col = 0; col < imageIn->header.width_px; col++) {
-            // Aplicar filtro de desenfoque
-            imageOut->pixels[row][col].red =
-                calcPixelVal(imageIn->pixels, row, col,
-                             imageIn->header.width_px, imageIn->norm_height,
-                             RED) /
-                (FILTER_SIZE * FILTER_SIZE);
-            imageOut->pixels[row][col].green =
-                calcPixelVal(imageIn->pixels, row, col,
-                             imageIn->header.width_px, imageIn->norm_height,
-                             GREEN) /
-                (FILTER_SIZE * FILTER_SIZE);
-            imageOut->pixels[row][col].blue =
-                calcPixelVal(imageIn->pixels, row, col,
-                             imageIn->header.width_px, imageIn->norm_height,
-                             BLUE) /
-                (FILTER_SIZE * FILTER_SIZE);
-            imageOut->pixels[row][col].alpha = 255;
-        }
+    Pixel *output_image_data =
+        (Pixel *)get_output_image(alto * ancho * sizeof(Pixel));
+    if (output_image_data == NULL) {
+        die("No se pudo recuperar la imagen compartida de salida");
     }
 
-#if DEBUG_DESENFOCADOR
-    DEBUG_PRINT("DESENFOCADOR", "terminado. [%d -> %d] (debe ser < %d)\n",
-                actualStartRow, actualEndRow - 1, middleRow);
-#endif
-}
+    apply_filter_parallel(image_data, output_image_data, alto, ancho,
+                          fila_inicio, fila_fin, hilos, filter);
 
-void
-apply_desenfocador_parallel(BMP_Image *imageIn, BMP_Image *imageOut,
-                            int numThreads) {
-    apply_filter_parallel(imageIn, imageOut, numThreads, apply_desenfocador);
+    return 0;
 }
