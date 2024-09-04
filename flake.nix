@@ -33,6 +33,22 @@
       systems = import systems;
 
       perSystem = { config, pkgs, ... }: {
+        packages.default = pkgs.stdenv.mkDerivation {
+          pname = "ccpg1056-final";
+          version = "0.1.0";
+
+          src = ./.;
+
+          nativeBuildInputs = [ pkgs.gnumake ];
+
+          buildPhase = "make";
+
+          installPhase = ''
+            mkdir -p $out/bin
+            cp pipeline desenfocador realzador $out/bin/
+          '';
+        };
+
         devenv.shells.default = {
           devenv.root =
             let
