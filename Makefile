@@ -13,26 +13,42 @@ CC := cc
 CFLAGS := -Wall -Wextra -std=c99 -I$(INC_DIR) -pthread -Wno-pragma-pack
 LDFLAGS := -pthread
 
+# ============================================================================
+# TESTING
+# ============================================================================
+SAMPLE_IMAGES := test wizard airplane car purduetrain
+
 # OS-specific settings
 # -lrt is unavailable on darwin
 ifeq ($(shell uname -s),Linux)
     LDFLAGS += -lrt
 endif
 
-all: clean $(TARGETS) | outputs
+all: clean info $(TARGETS) | outputs
+
+info:
+	@printf "CC: ${CC}\\n"
+	@printf "CFLAGS: ${CFLAGS}\\n"
+	@printf "LDFLAGS: ${LDFLAGS}\\n"
+	@printf "SAMPLE_IMAGES: ${SAMPLE_IMAGES}\\n\\n"
 
 $(TARGETS): | outputs $(OBJ_DIR)
-	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) ${^} -o ${@} $(LDFLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c ${<} -o ${@}
 
 pipeline: $(filter-out $(OBJ_DIR)/desenfocador.o $(OBJ_DIR)/realzador.o, $(OBJS))
 
 desenfocador realzador: %: $(OBJ_DIR)/%.o $(COMMON_OBJS)
 
 $(OBJ_DIR) outputs:
-	mkdir -p $@
+	@mkdir -p ${@}
+
+samples: all
+	@for img in $(SAMPLE_IMAGES); do \
+		printf "./samples/$$img.bmp\nq\n" | ./pipeline 4 ./outputs/$${img}_sol.bmp; \
+	done
 
 docs:
 	@printf "Building docs...\\n"
@@ -45,4 +61,4 @@ docs-watch:
 clean:
 	rm -Rf $(TARGETS) $(OBJ_DIR) outputs
 
-.PHONY: all clean docs docs-watch
+.PHONY: all info clean samples docs docs-watch
