@@ -11,6 +11,8 @@
   ),
 )
 
+#show link: it => [#set text(blue); #underline(it)]
+
 = Problemática a Resolver
 
 El objetivo principal de este proyecto es aplicar técnicas de sincronización y
@@ -38,9 +40,12 @@ etapas, garantizando que:
 - Al finalizar, se combinen las dos porciones procesadas de la imagen en una sola
   y se guarde en disco
 
+A continuación se presenta un diagrama de actividades que describe el
+comportamiento esperado del pipeline @mermaid-chart:
+
 // https://www.mermaidchart.com/app/projects/bed189c5-7739-4bfb-a9ad-8aadd6fc612d/diagrams/fc9137a0-e48e-4a9b-a93b-2b27f80860a7/version/v0.1/edit
 #figure(
-  image("assets/uml.png", width: 55%), caption: "Diagrama de Actividades del Pipeline",
+  image("assets/uml.png", width: 80%), caption: "Diagrama de Actividades del Pipeline",
 )
 
 #pagebreak()
@@ -72,7 +77,10 @@ programa funcione como fue originalmente intencionado.
 
 = Anexos
 
-#lorem(10)
+== Repositorio Online
+
+La totalidad del código desarrollado se encuentra disponible en el siguiente
+#link("https://github.com/anntnzrb/ccpg1056-final")[repositorio de GitHub].
 
 #pagebreak()
 
