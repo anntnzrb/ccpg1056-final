@@ -51,21 +51,50 @@ comportamiento esperado del pipeline @mermaid-chart:
 #pagebreak()
 
 = Limitaciones y Resoluciónes
-Durante el desarrollo del proyecto se presentaron aalgunas limitaciones, cada
-una de las cuales requirió soluciones específicas para garantizar que el
-programa funcione como fue originalmente intencionado.
+Durante el desarrollo del proyecto se presentaron algunas limitaciones, cada una
+de las cuales requirió soluciones específicas para garantizar que el programa
+funcione como fue originalmente intencionado.
 
-== A
+== Sincronización Entre Procesos
 
-#lorem(10)
+El principal problema surgió debido a que el publicador continuaba su ejecución
+sin haber confirmado que los filtros que se ejecutaron como procesos
+independientes, terminaran de ejecutarse. Estos ocasionaba que el publicador
+intentara continuar con su ejecución y guardar una imagen incompleta o corrupta,
+lo que resultaba en que el programa finalizara abruptamente o crasheara.
 
-== B
+La solución a este problema fue implementar un publicador que ejecutara ambos
+filtros de manera simultánea una vez que la memoria compartida ya se haya
+mapeado, y que espere la finalización de estos procesos mediante la función `waitpid` para
+garantizar que no se continue con la ejecución utilizando una imagen incompleta
+y posiblemente dañada.
 
-#lorem(10)
+== División de Responsabilidades Entre Filtros
 
-== C
+Otro problema que se presentó fue garantizar que cada filtro procesara
+exactamente la mitad de la imagen asignada. Esto implicaba evitar la
+sobreescritura de píxeles o la omisión de los que ya habían sido tratados por el
+otro filtro, lo cual resultaba en la generación de una imagen con un
+procesamiento de baja calidad o impreciso.
 
-#lorem(10)
+Para resolver este problema se implementó un publicador que asignaba los rangos
+de filas y parámetros que definían el área de operación para cada filtro. Esta
+asignación detallada permitía que cada filtro procesara exactamente la mitad de
+la imagen que le correspondía. Una vez establecidos estos parámetros se logró la
+división del trabajo mediante el uso de múltiples hilos, mejorando el
+rendimiento del programa y acotando las instrucciones solicitadas.
+
+== Gestión de Memoria
+
+La gestión de memoria se presentó como un tópico bastante tedioso. Este problema
+surgió debido a la necesidad de compartir datos entre procesos utilizando
+memoria compartida, lo que aumentaba el riesgo de fugas de memoria si los
+recursos no se liberaban adecuadamente.
+
+Para lidiar con este problema, se utilizó memoria compartida mediante la
+libreria *POSIX*. Se empleó la función `mmap` para mapear la memoria compartida.
+Ahora, la asignación de memoria se realiza de manera dinámica según el tamaño de
+la imagen la cual es liberada por la función `munmap` y `shm_unlink`.
 
 #pagebreak()
 
