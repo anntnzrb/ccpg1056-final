@@ -15,12 +15,12 @@ typedef enum { RED, BLUE, GREEN } Channel;
 
 // struct para los parámetros del filtro
 typedef struct {
-    Pixel **image_in;
+    Pixel *image_in;
     Pixel *image_out;
     int start_row;
     int end_row;
     int columns;
-    int process_row;
+    int height;
     const int (*filter)[FILTER_SIZE];
 } FilterParameters;
 
@@ -66,7 +66,8 @@ filter_thread_worker(void *args);
  * @brief Aplica un filtro a un canal de la imagen.
  */
 int
-apply_filter_to_channel(Pixel **pixels_in, Channel c, int x, int y,
+apply_filter_to_channel(Pixel *pixels_in, Channel c, int x, int y, int width,
+                        int height,
                         const int filter[FILTER_SIZE][FILTER_SIZE]);
 
 /**

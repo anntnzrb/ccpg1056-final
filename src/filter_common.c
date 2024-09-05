@@ -34,10 +34,10 @@ apply_filter_parallel(Pixel *image_in, Pixel *image_out, int height, int width,
                       const int filter[FILTER_SIZE][FILTER_SIZE]) {
     pthread_t *threads = malloc(num_threads * sizeof(pthread_t));
     FilterParameters *args = malloc(num_threads * sizeof(FilterParameters));
-    Pixel **padded_image = add_padding(image_in, height, width);
 
-    int rows_per_thread = (end_row - start_row) / num_threads;
-    int remaining_rows = (end_row - start_row) % num_threads;
+    int rows_to_process = end_row - start_row;
+    int rows_per_thread = rows_to_process / num_threads;
+    int remaining_rows = rows_to_process % num_threads;
 
     for (int i = 0; i < num_threads; i++) {
         int thread_start_row = start_row + i * rows_per_thread +
@@ -45,12 +45,12 @@ apply_filter_parallel(Pixel *image_in, Pixel *image_out, int height, int width,
         int thread_end_row =
             thread_start_row + rows_per_thread + (i < remaining_rows ? 1 : 0);
 
-        args[i] = (FilterParameters){.image_in = padded_image,
+        args[i] = (FilterParameters){.image_in = image_in,
                                      .image_out = image_out,
                                      .start_row = thread_start_row,
                                      .end_row = thread_end_row,
                                      .columns = width,
-                                     .process_row = end_row,
+                                     .height = height,
                                      .filter = filter};
 
         pthread_create(&threads[i], NULL, filter_thread_worker, &args[i]);
@@ -62,7 +62,6 @@ apply_filter_parallel(Pixel *image_in, Pixel *image_out, int height, int width,
 
     free(args);
     free(threads);
-    free_padded_image(padded_image, height + 2);
 }
 
 Pixel **
@@ -94,21 +93,21 @@ free_padded_image(Pixel **data, int height) {
 void *
 filter_thread_worker(void *args) {
     FilterParameters *data = (FilterParameters *)args;
-    int start_row = (data->start_row == 0) ? 1 : data->start_row;
-    int end_row = (data->process_row == data->end_row) ? data->end_row - 1
-                                                       : data->end_row;
 
-    for (int i = start_row; i <= end_row; i++) {
-        for (int j = 1; j < data->columns + 1; j++) {
-            int index = (i - 1) * data->columns + (j - 1);
-            data->image_out[index] =
-                (Pixel){.red = apply_filter_to_channel(data->image_in, RED, i,
-                                                       j, data->filter),
-                        .blue = apply_filter_to_channel(data->image_in, BLUE,
-                                                        i, j, data->filter),
-                        .green = apply_filter_to_channel(data->image_in, GREEN,
-                                                         i, j, data->filter),
-                        .alpha = 255};
+    for (int i = data->start_row; i < data->end_row; i++) {
+        for (int j = 0; j < data->columns; j++) {
+            int index = i * data->columns + j;
+            data->image_out[index] = (Pixel){
+                .red = apply_filter_to_channel(data->image_in, RED, i, j,
+                                               data->columns, data->height,
+                                               data->filter),
+                .green = apply_filter_to_channel(data->image_in, GREEN, i, j,
+                                                 data->columns, data->height,
+                                                 data->filter),
+                .blue = apply_filter_to_channel(data->image_in, BLUE, i, j,
+                                                data->columns, data->height,
+                                                data->filter),
+                .alpha = 255};
         }
     }
 
@@ -116,15 +115,21 @@ filter_thread_worker(void *args) {
 }
 
 int
-apply_filter_to_channel(Pixel **pixels_in, Channel c, int x, int y,
+apply_filter_to_channel(Pixel *pixels_in, Channel c, int x, int y, int width,
+                        int height,
                         const int filter[FILTER_SIZE][FILTER_SIZE]) {
     int total = 0;
+    int count = 0;
     for (int k = 0; k < FILTER_SIZE; k++) {
         for (int l = 0; l < FILTER_SIZE; l++) {
-            int m = x - FILTER_SIZE / 2 + k;
-            int n = y - FILTER_SIZE / 2 + l;
-            total += get_pixel_channel(&pixels_in[m][n], c) * filter[k][l];
+            int m = x + k - FILTER_SIZE / 2;
+            int n = y + l - FILTER_SIZE / 2;
+            if (m >= 0 && m < height && n >= 0 && n < width) {
+                total += get_pixel_channel(&pixels_in[m * width + n], c) *
+                         filter[k][l];
+                count++;
+            }
         }
     }
-    return total / (FILTER_SIZE * FILTER_SIZE);
+    return count > 0 ? total / count : 0;
 }
