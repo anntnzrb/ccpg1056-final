@@ -1,0 +1,37 @@
+name: Generate Documentation
+
+# only trigger when docs folder is modified or when the workflow is manually
+# triggered
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+
+permissions:
+  contents: write
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Typst
+        uses: typst-community/setup-typst@v3
+
+      - name: Compile Documentation
+        run: |
+          typst compile --root docs docs/main.typ g7-reporte.pdf
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: PDF Report
+          tag_name: docs-${{ github.ref_name }}
+          files: g7-reporte.pdf
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
