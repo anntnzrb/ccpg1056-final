@@ -5,7 +5,7 @@
 #include "util.h"
 
 static const int filter[FILTER_SIZE][FILTER_SIZE] = {
-    {1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
+    {1, 2, 1}, {2, 4, 2}, {1, 2, 1}};
 
 int
 main(int argc, char **argv) {
