@@ -60,9 +60,15 @@ apply_filter(BMP_Image *img, int num_threads, const char *filter_name,
 
     // hijo
     if (child == 0) {
+        // Reverse start_row and end_row for top-down images
+        int actual_start =
+            img->is_bottom_up ? start_row : img->norm_height - end_row;
+        int actual_end =
+            img->is_bottom_up ? end_row : img->norm_height - start_row;
+
         char args[5][16];
-        snprintf(args[0], 16, "%d", start_row);
-        snprintf(args[1], 16, "%d", end_row);
+        snprintf(args[0], 16, "%d", actual_start);
+        snprintf(args[1], 16, "%d", actual_end);
         snprintf(args[2], 16, "%d", img->norm_height);
         snprintf(args[3], 16, "%d", img->header.width_px);
         snprintf(args[4], 16, "%d", num_threads);
@@ -109,11 +115,13 @@ process_image(const char *filename, const char *output_path, BMP_Image *image,
     copy_image_data(input_pixels_image, image, 1);
 
     // aplicar los filtros (desenfocador y realzador)
-    pid_t filtro_desenfocador =
-        apply_filter(image, num_threads, "desenfocador",
-                     image->norm_height / 2, image->norm_height);
-    pid_t filtro_realzador = apply_filter(image, num_threads, "realzador", 0,
-                                          image->norm_height / 2 - 1);
+    int mid_row = image->norm_height / 2;
+    pid_t filtro_desenfocador, filtro_realzador;
+
+    filtro_realzador =
+        apply_filter(image, num_threads, "realzador", 0, mid_row);
+    filtro_desenfocador = apply_filter(image, num_threads, "desenfocador",
+                                       mid_row, image->norm_height);
 
     // esperar a que los filtros terminen
     int status;

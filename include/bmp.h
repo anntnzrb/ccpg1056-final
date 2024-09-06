@@ -1,8 +1,8 @@
+#ifndef _BMP_H_
+#define _BMP_H_
 #include <stdint.h>
 #include <stdio.h>
 
-#ifndef _BMP_H_
-#define _BMP_H_
 #define TRUE 1
 #define FALSE 0
 #define ARGUMENT_ERROR 1
@@ -58,9 +58,10 @@ typedef struct __attribute__((packed)) Pixel {
 
 typedef struct BMP_Image {
     BMP_Header header;
-    int norm_height;     // normalized height
-    int bytes_per_pixel; // This amount should be equals to number of bits/8
+    int norm_height;
+    int bytes_per_pixel;
     Pixel **pixels;
+    int is_bottom_up;
 } BMP_Image;
 
 void
@@ -68,7 +69,7 @@ printError(int error);
 BMP_Image *
 createBMPImage(FILE *fptr, BMP_Image *dataImage);
 int
-readImageData(FILE *srcFile, BMP_Image *dataImage, int dataSize);
+readImageData(FILE *srcFile, BMP_Image *dataImage);
 int
 readImage(FILE *srcFile, BMP_Image *dataImage);
 int
@@ -84,4 +85,4 @@ printBMPHeader(BMP_Header *header);
 void
 printBMPImage(BMP_Image *image);
 
-#endif /* bmp.h */
+#endif /* _BMP_H_ */

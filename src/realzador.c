@@ -4,7 +4,8 @@
 #include "filter_common.h"
 #include "util.h"
 
-int filter[FILTER_SIZE][FILTER_SIZE] = {{1, 0, -1}, {2, 0, -2}, {1, 0, -1}};
+int filter[FILTER_SIZE][FILTER_SIZE] = {
+    {-1, -1, -1}, {-1, 8, -1}, {-1, -1, -1}};
 
 int
 main(int argc, char **argv) {
@@ -19,13 +20,14 @@ main(int argc, char **argv) {
     int ancho = atoi(argv[4]);
     int hilos = atoi(argv[5]);
 
-    Pixel *image_data = (Pixel *)get_input_image(alto * ancho * sizeof(Pixel));
+    Pixel *image_data =
+        (Pixel *)get_shared_image(IMAGE_INPUT, alto * ancho * sizeof(Pixel));
     if (image_data == NULL) {
         die("No se pudo recuperar la imagen compartida de entrada");
     }
 
     Pixel *output_image_data =
-        (Pixel *)get_output_image(alto * ancho * sizeof(Pixel));
+        (Pixel *)get_shared_image(IMAGE_OUTPUT, alto * ancho * sizeof(Pixel));
     if (output_image_data == NULL) {
         die("No se pudo recuperar la imagen compartida de salida");
     }

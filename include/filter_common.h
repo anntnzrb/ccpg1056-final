@@ -7,6 +7,7 @@
 
 #define FILTER_SIZE 3
 
+// img keys
 extern const char *IMAGE_INPUT;
 extern const char *IMAGE_OUTPUT;
 
@@ -22,19 +23,17 @@ typedef struct {
     int columns;
     int height;
     const int (*filter)[FILTER_SIZE];
+    int is_bottom_up;
 } FilterParameters;
 
 /**
- * @brief Obtiene la imagen de entrada desde la memoria compartida.
+ * @brief Obtiene una imagen desde la memoria compartida.
+ * @param image_key Clave de la imagen (IMAGE_INPUT o IMAGE_OUTPUT)
+ * @param size Tamaño de la imagen en bytes
+ * @return Puntero a la imagen en memoria compartida, o NULL si hay un error
  */
 void *
-get_input_image(int size);
-
-/**
- * @brief Obtiene la imagen de salida desde la memoria compartida.
- */
-void *
-get_output_image(int size);
+get_shared_image(const char *image_key, int size);
 
 /**
  * @brief Aplica un filtro a una porción de la imagen en paralelo.
@@ -49,12 +48,6 @@ apply_filter_parallel(Pixel *image_in, Pixel *image_out, int height, int width,
  */
 Pixel **
 add_padding(Pixel *image_in, int height, int width);
-
-/**
- * @brief Libera la memoria de la imagen con padding.
- */
-void
-free_padded_image(Pixel **data, int height);
 
 /**
  * @brief Trabajo del hilo del filtro.
