@@ -60,7 +60,7 @@ apply_filter(BMP_Image *img, int num_threads, const char *filter_name,
 
     // hijo
     if (child == 0) {
-        // Reverse start_row and end_row for top-down images
+        // invertir start_row y end_row para imgs al revés
         int actual_start =
             img->is_bottom_up ? start_row : img->norm_height - end_row;
         int actual_end =

@@ -28,9 +28,6 @@ typedef struct {
 
 /**
  * @brief Obtiene una imagen desde la memoria compartida.
- * @param image_key Clave de la imagen (IMAGE_INPUT o IMAGE_OUTPUT)
- * @param size Tamaño de la imagen en bytes
- * @return Puntero a la imagen en memoria compartida, o NULL si hay un error
  */
 void *
 get_shared_image(const char *image_key, int size);
