@@ -6,17 +6,10 @@ OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 COMMON_SRCS := filter_common.c bmp.c util.c
 COMMON_OBJS := $(addprefix $(OBJ_DIR)/,$(COMMON_SRCS:.c=.o))
 TARGETS := pipeline desenfocador realzador
-DOCS_DIR = docs
-REPORT_FILE = g7-reporte.pdf
 
 CC := cc
 CFLAGS := -Wall -Wextra -std=c99 -I$(INC_DIR) -pthread -Wno-pragma-pack
 LDFLAGS := -pthread
-
-# ============================================================================
-# TESTING
-# ============================================================================
-SAMPLE_IMAGES := test wizard airplane car purduetrain
 
 # OS-specific settings
 # -lrt is unavailable on darwin
@@ -24,7 +17,7 @@ ifeq ($(shell uname -s),Linux)
     LDFLAGS += -lrt
 endif
 
-all: clean info $(TARGETS) | outputs
+all: info $(TARGETS) | outputs
 
 info:
 	@printf "CC: ${CC}\\n"
@@ -45,10 +38,25 @@ desenfocador realzador: %: $(OBJ_DIR)/%.o $(COMMON_OBJS)
 $(OBJ_DIR) outputs:
 	@mkdir -p ${@}
 
+clean:
+	rm -Rf $(TARGETS) $(OBJ_DIR) outputs
+	find . -name "*.pdf" -type f -delete
+
+# ============================================================================
+# TESTING
+# ============================================================================
+SAMPLE_IMAGES := test wizard airplane car purduetrain
+
 samples: all
 	@for img in $(SAMPLE_IMAGES); do \
 		printf "./samples/$$img.bmp\nq\n" | ./pipeline 4 ./outputs/$${img}_sol.bmp; \
 	done
+
+# ============================================================================
+# docs
+# ============================================================================
+DOCS_DIR = docs
+REPORT_FILE = g7-reporte.pdf
 
 docs:
 	@printf "Building docs...\\n"
@@ -58,7 +66,18 @@ docs-watch:
 	@printf "Watching docs...\\n"
 	typst watch --root $(DOCS_DIR) $(DOCS_DIR)/main.typ $(REPORT_FILE)
 
-clean:
-	rm -Rf $(TARGETS) $(OBJ_DIR) outputs
+# ============================================================================
+# Docker
+# ============================================================================
+DOCKER_IMAGE_NAME := ccpg1056-final
 
-.PHONY: all info clean samples docs docs-watch
+docker-build:
+	docker build -t $(DOCKER_IMAGE_NAME) .
+
+docker-run: docker-build
+	docker run -it --rm -v $(PWD):/app $(DOCKER_IMAGE_NAME)
+
+docker-clean:
+	docker rmi $(DOCKER_IMAGE_NAME)
+
+.PHONY: all info clean samples docs docs-watch docker-build docker-run docker-clean

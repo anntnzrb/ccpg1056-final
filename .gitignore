@@ -3,6 +3,7 @@
 .devenv
 result
 outputs/
+obj/
 instructions.txt
 pipeline
 desenfocador
