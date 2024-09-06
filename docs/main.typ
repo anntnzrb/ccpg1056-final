@@ -77,24 +77,25 @@ garantizar que no se continue con la ejecución utilizando una imagen incompleta
 y posiblemente dañada.
 
 ```c
-    // ...
-    filtro_realzador =
-        apply_filter(image, num_threads, "realzador", 0, mid_row);
-    filtro_desenfocador = apply_filter(image, num_threads, "desenfocador",
-                                       mid_row, image->norm_height);
+// publicador.c
+// ...
+filtro_realzador =
+    apply_filter(image, num_threads, "realzador", 0, mid_row);
+filtro_desenfocador = apply_filter(image, num_threads, "desenfocador",
+                                   mid_row, image->norm_height);
 
-    // esperar a que los filtros terminen
-    int status;
-    if (filtro_desenfocador == -1 || filtro_realzador == -1 ||
-        waitpid(filtro_desenfocador, &status, 0) == -1 || !WIFEXITED(status) ||
-        WEXITSTATUS(status) != 0 ||
-        waitpid(filtro_realzador, &status, 0) == -1 || !WIFEXITED(status) ||
-        WEXITSTATUS(status) != 0) {
-        fprintf(stderr, "Error procesando la imagen\n");
-        fclose(source);
-        return 1;
-    }
-    // ...
+// esperar a que los filtros terminen
+int status;
+if (filtro_desenfocador == -1 || filtro_realzador == -1 ||
+    waitpid(filtro_desenfocador, &status, 0) == -1 || !WIFEXITED(status) ||
+    WEXITSTATUS(status) != 0 ||
+    waitpid(filtro_realzador, &status, 0) == -1 || !WIFEXITED(status) ||
+    WEXITSTATUS(status) != 0) {
+    fprintf(stderr, "Error procesando la imagen\n");
+    fclose(source);
+    return 1;
+}
+// ...
 ```
 
 == División de Responsabilidades Entre Filtros
@@ -113,6 +114,7 @@ división del trabajo mediante el uso de múltiples hilos, mejorando el
 rendimiento del programa y acotando las instrucciones solicitadas.
 
 ```c
+// publicador.c
 pid_t apply_filter(BMP_Image *img, int num_threads, const char *filter_name,
              int start_row, int end_row) {
     pid_t child = fork();
@@ -151,6 +153,7 @@ Ahora, la asignación de memoria se realiza de manera dinámica según el tamañ
 la imagen la cual es liberada por la función `munmap` y `shm_unlink`.
 
 ```c
+// publicador.c
 int create_shm(const char *name, int *fd, void **pixels_image, size_t shm_size) {
     // crear el espacio de memoria compartida
     *fd = shm_open(name, O_CREAT | O_TRUNC | O_RDWR, 0666);
@@ -169,6 +172,47 @@ int create_shm(const char *name, int *fd, void **pixels_image, size_t shm_size) 
     }
 
     return 0;
+}
+```
+
+#pagebreak()
+
+== Imágenes con Dimensiones Negativas
+
+Algunas imágenes BMP tienen dimensiones negativas, las cuales tienen una
+orientación invertida y requieren un procesamiento especial. Este problema
+causaba que los filtros aplicaran sus efectos de manera incorrecta, e
+inesperada. En consecuencia, se generaban imágenes distorsionadas o procesadas
+erróneamente.
+
+Se añadió un campo `is_bottom_up` a la estructura `BMP_Image` para identificar
+estas imágenes, se ajustaron los cálculos de las filas de inicio y fin en la
+función `apply_filter`. Esto permitió que los filtros procesen correctamente a
+imágenes con dimensiones normales e invertidas, asegurando que los efectos se
+apliquen en la dirección adecuada independientemente de la orientación de la
+imagen.
+
+```c
+// bmp.h
+typedef struct BMP_Image {
+    BMP_Header header;
+    int norm_height;
+    int bytes_per_pixel;
+    Pixel **pixels;
+    int is_bottom_up; // identificar imgs al revés
+} BMP_Image;
+```
+
+```c
+// bmp.c
+int read_bmp(FILE *fp, BMP_Image *img) {
+    // ...
+
+    // detectar si la img está al revés
+    img->is_bottom_up = img->header.height_px > 0;
+    img->norm_height = abs(img->header.height_px);
+
+    // ...
 }
 ```
 
@@ -247,11 +291,11 @@ la imagen de entrada más el sufijo `_sol`.
 
 === Ejecución del Programa con Docker <docker-instructions>
 
-A pesar de que el programa es funcional, este no se libra de errores y
-comportamientos inesperados, como leaks de memoria. Para evitar problemas, se
-recomienda ejecutar el programa utilizando #link("https://www.docker.com/")[Docker].
-Esto permite ejecutar el programa en un contenedor aislado, evitando problemas
-en la máquina host.
+A pesar de que el programa es funcional, y está testeado para evitar problemas
+de comportamientos inesperados, como leaks de memoria, entre otros. Se
+recomienda ejecutar el programa utilizando
+#link("https://www.docker.com/")[Docker]. Esto permite ejecutar el programa en
+un contenedor aislado, evitando problemas en la máquina host.
 
 La imagen configurada en el contenedor es muy pequeña, y no debería ocupar mucho
 espacio en la máquina host.
