@@ -60,6 +60,8 @@ apply_filter(BMP_Image *img, int num_threads, const char *filter_name,
 
     // hijo
     if (child == 0) {
+        printf("Iniciando proceso: %s\n", filter_name);
+
         // invertir start_row y end_row para imgs al revés
         int actual_start =
             img->is_bottom_up ? start_row : img->norm_height - end_row;
@@ -94,9 +96,9 @@ process_image(const char *filename, const char *output_path, BMP_Image *image,
         return 1;
     }
 
-    printf("IMAGEN DE ENTRADA:\n");
-    printBMPHeader(&image->header);
-    printBMPImage(image);
+    // printf("IMAGEN DE ENTRADA:\n");
+    // printBMPHeader(&image->header);
+    // printBMPImage(image);
 
     // crear la memoria compartida para la imagen original y la imagen
     // procesada
@@ -118,6 +120,10 @@ process_image(const char *filename, const char *output_path, BMP_Image *image,
     int mid_row = image->norm_height / 2;
     pid_t filtro_desenfocador, filtro_realzador;
 
+    printf("Iniciando aplicación de filtros (hilos: %d, filtros: "
+           "(desenfocador, realzador))...\n",
+           num_threads);
+
     filtro_realzador =
         apply_filter(image, num_threads, "realzador", 0, mid_row);
     filtro_desenfocador = apply_filter(image, num_threads, "desenfocador",
@@ -134,6 +140,8 @@ process_image(const char *filename, const char *output_path, BMP_Image *image,
         fclose(source);
         return 1;
     }
+
+    printf("Filtros aplicados exitosamente.\n");
 
     // copiar el header de la imagen original a la nueva imagen
     memcpy(&(new_image->header), &(image->header), sizeof(BMP_Header));
@@ -201,7 +209,7 @@ process_image(const char *filename, const char *output_path, BMP_Image *image,
 int
 main(int argc, char **argv) {
     if (argc != 3 || (atoi(argv[1])) <= 0) {
-        die("Uso: %s <hilos> <ruta_salida>", argv[0]);
+        die("Uso: %s <hilos> <ruta_salida>\n", argv[0]);
     }
 
     int num_threads = atoi(argv[1]);
