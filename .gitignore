@@ -8,6 +8,7 @@ pipeline
 desenfocador
 realzador
 *.pdf
+.pre-commit-config.yaml
 
 ### C ###
 # Prerequisites

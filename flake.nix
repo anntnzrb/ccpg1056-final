@@ -85,6 +85,11 @@
             typst
           ];
 
+          pre-commit.hooks.treefmt = {
+            enable = true;
+            packageOverrides.treefmt = config.treefmt.build.wrapper;
+          };
+
           enterShell = ''
             cat <<EOF
 
