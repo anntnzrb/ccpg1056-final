@@ -4,4 +4,4 @@ RUN apk add --no-cache gcc musl-dev make
 
 WORKDIR /app
 
-CMD ["sh", "-c", "make clean && make samples"]
+CMD ["/bin/sh", "-c", "make clean && make samples && /bin/sh"]
