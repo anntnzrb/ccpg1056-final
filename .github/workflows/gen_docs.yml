@@ -1,0 +1,35 @@
+name: Generate Documentation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**" # only trigger when docs folder is modified
+
+permissions:
+  contents: write
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v13
+
+      - name: Build Documentation
+        run: |
+          nix shell .# --command sh -c "make docs"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: docs (auto-generated)
+          tag_name: docs-${{ github.sha }}
+          files: g7-reporte.pdf
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
