@@ -12,4 +12,10 @@
 void
 die(const char *format, ...);
 
+/**
+ * @brief Imprime una barra de progreso.
+ */
+void
+print_progress_bar(float progress, const char *prefix);
+
 #endif // UTIL_H

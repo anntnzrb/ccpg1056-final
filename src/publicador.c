@@ -20,13 +20,20 @@ void
 copy_image_data(void *dest, BMP_Image *image, int is_input) {
     // copiar los datos de la imagen a la memoria compartida
     size_t row_size = image->header.width_px * sizeof(Pixel);
+    const char *progress_message =
+        is_input ? "Copiando imagen a memoria compartida:"
+                 : "Copiando imagen procesada desde memoria compartida:";
+
+    printf("%s\n", progress_message);
     for (int i = 0; i < image->norm_height; i++) {
         if (is_input) {
             memcpy((char *)dest + i * row_size, image->pixels[i], row_size);
         } else {
             memcpy(image->pixels[i], (char *)dest + i * row_size, row_size);
         }
+        print_progress_bar((float)(i + 1) / image->norm_height, "Progreso");
     }
+    printf("\n");
 }
 
 int
@@ -96,9 +103,7 @@ process_image(const char *filename, const char *output_path, BMP_Image *image,
         return 1;
     }
 
-    // printf("IMAGEN DE ENTRADA:\n");
-    // printBMPHeader(&image->header);
-    // printBMPImage(image);
+    printf("Procesando imagen: %s\n", filename);
 
     // crear la memoria compartida para la imagen original y la imagen
     // procesada
@@ -120,10 +125,7 @@ process_image(const char *filename, const char *output_path, BMP_Image *image,
     int mid_row = image->norm_height / 2;
     pid_t filtro_desenfocador, filtro_realzador;
 
-    printf("Iniciando aplicación de filtros (hilos: %d, filtros: "
-           "(desenfocador, realzador))...\n",
-           num_threads);
-
+    printf("Aplicando filtros:\n");
     filtro_realzador =
         apply_filter(image, num_threads, "realzador", 0, mid_row);
     filtro_desenfocador = apply_filter(image, num_threads, "desenfocador",
