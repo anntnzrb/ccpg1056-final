@@ -57,6 +57,32 @@ comportamiento esperado del pipeline @mermaid-chart:
 
 #pagebreak()
 
+= Filtros e Implementación
+
+== Filtro de Desenfoque (Blur)
+
+Para este filtro se decidió emplear una versión simplificada del _Filtro Gaussiano_ (*Gaussian
+Blur*) con un kernel `3x3`. Este filtro es eficaz para suavizar las imágenes,
+reducir el ruido y eliminar detalles finos, lo que lo convierte en una
+herramienta esencial para el procesamiento de imágenes @wiki:Gaussian_blur.
+
+El kernel utilizado para este filtro es:
+
+$ mat(1, 2, 1;2, 4, 2;1, 2, 1) $
+
+== Filtro de Realce (Edge Detection)
+
+Para el filtro de realce de bordes (*edge detection*), se implementó un _Filtro Laplaciano_ utilizando
+un kernel `3x3`. Este filtro es conocido por su capacidad para detectar bordes
+de manera isotrópica, lo que lo hace ideal para resaltar detalles finos en la
+imagen @sbme_cv_notes_2018.
+
+El kernel utilizado para este filtro es:
+
+$ mat(-1, -1, -1;-1, 8, -1;-1, -1, -1) $
+
+#pagebreak()
+
 = Limitaciones y Resoluciónes
 Durante el desarrollo del proyecto se presentaron algunas limitaciones, cada una
 de las cuales requirió soluciones específicas para garantizar que el programa
@@ -113,32 +139,7 @@ la imagen que le correspondía. Una vez establecidos estos parámetros se logró
 división del trabajo mediante el uso de múltiples hilos, mejorando el
 rendimiento del programa y acotando las instrucciones solicitadas.
 
-```c
-// publicador.c
-pid_t apply_filter(BMP_Image *img, int num_threads, const char *filter_name,
-             int start_row, int end_row) {
-    pid_t child = fork();
-    if (child == -1) { return -1; }
-
-    // hijo
-    if (child == 0) {
-        // invertir start_row y end_row para imgs al revés
-        int actual_start = img->is_bottom_up ? start_row : img->norm_height - end_row;
-        int actual_end = img->is_bottom_up ? end_row : img->norm_height - start_row;
-
-        char args[5][16];
-        snprintf(args[0], 16, "%d", actual_start);
-        snprintf(args[1], 16, "%d", actual_end);
-        snprintf(args[2], 16, "%d", img->norm_height);
-        snprintf(args[3], 16, "%d", img->header.width_px);
-        snprintf(args[4], 16, "%d", num_threads);
-        execl(filter_name, filter_name, args[0], args[1], args[2], args[3],
-                args[4], NULL);
-    }
-
-    return child;
-}
-```
+#pagebreak()
 
 == Gestión de Memoria
 
