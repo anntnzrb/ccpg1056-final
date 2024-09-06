@@ -220,7 +220,21 @@ int read_bmp(FILE *fp, BMP_Image *img) {
 
 = Salidas de Pantalla y Ejecución
 
-#lorem(10)
+#figure(
+  image("assets/cap1.png", width: 100%), caption: "Compilación del programa",
+)
+
+#figure(
+  image("assets/cap2.png", width: 100%), caption: "Ejecución del programa #1",
+)
+
+#figure(
+  image("assets/cap3.png", width: 100%), caption: "Ejecución del programa #2",
+)
+
+#figure(
+  image("assets/cap4.png", width: 100%), caption: "Ejecución de ejemplares de prueba",
+)
 
 #pagebreak()
 
