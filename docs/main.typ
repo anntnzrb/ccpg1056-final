@@ -176,7 +176,7 @@ int create_shm(const char *name, int *fd, void **pixels_image, size_t shm_size) 
 
 = Salidas de Pantalla y Ejecución
 
-#lorem(10)
+#lorem(20)
 
 #pagebreak()
 
