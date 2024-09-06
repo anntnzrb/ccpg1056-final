@@ -1,12 +1,14 @@
 name: Generate Documentation
 
+# only trigger when docs folder is modified or when the workflow is manually
+# triggered
 on:
   workflow_dispatch:
   push:
     branches:
       - main
     paths:
-      - "docs/**" # only trigger when docs folder is modified
+      - "docs/**"
 
 permissions:
   contents: write
@@ -18,15 +20,15 @@ jobs:
       - name: Git Checkout
         uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v13
+      - name: Setup Typst
+        uses: typst-community/setup-typst@v3
 
-      - name: Build Documentation
+      - name: Compile Documentation
         run: |
-          nix shell .# --command sh -c "make docs"
+          typst compile --root docs docs/main.typ g7-reporte.pdf
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v1
         with:
           name: docs (auto-generated)
           tag_name: docs-${{ github.sha }}
