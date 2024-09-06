@@ -1,4 +1,4 @@
-#import "@preview/sourcerer:0.2.1": code
+#import "@preview/codly:1.0.0": *
 #import "template.typ": *
 
 #show: project.with(
@@ -12,6 +12,13 @@
 )
 
 #show link: it => [#set text(blue); #underline(it)]
+
+#show: codly-init.with()
+#codly(
+  languages: (
+    sh: (name: "sh", icon: "\u{f192} ", color: rgb("#CE412B")), c: (name: "C", icon: "\u{f13a} ", color: rgb("#555555")),
+  ), number-format: none,
+)
 
 = Problemática a Resolver
 
@@ -69,6 +76,27 @@ mapeado, y que espere la finalización de estos procesos mediante la función `w
 garantizar que no se continue con la ejecución utilizando una imagen incompleta
 y posiblemente dañada.
 
+```c
+    // ...
+    filtro_realzador =
+        apply_filter(image, num_threads, "realzador", 0, mid_row);
+    filtro_desenfocador = apply_filter(image, num_threads, "desenfocador",
+                                       mid_row, image->norm_height);
+
+    // esperar a que los filtros terminen
+    int status;
+    if (filtro_desenfocador == -1 || filtro_realzador == -1 ||
+        waitpid(filtro_desenfocador, &status, 0) == -1 || !WIFEXITED(status) ||
+        WEXITSTATUS(status) != 0 ||
+        waitpid(filtro_realzador, &status, 0) == -1 || !WIFEXITED(status) ||
+        WEXITSTATUS(status) != 0) {
+        fprintf(stderr, "Error procesando la imagen\n");
+        fclose(source);
+        return 1;
+    }
+    // ...
+```
+
 == División de Responsabilidades Entre Filtros
 
 Otro problema que se presentó fue garantizar que cada filtro procesara
@@ -84,6 +112,32 @@ la imagen que le correspondía. Una vez establecidos estos parámetros se logró
 división del trabajo mediante el uso de múltiples hilos, mejorando el
 rendimiento del programa y acotando las instrucciones solicitadas.
 
+```c
+pid_t apply_filter(BMP_Image *img, int num_threads, const char *filter_name,
+             int start_row, int end_row) {
+    pid_t child = fork();
+    if (child == -1) { return -1; }
+
+    // hijo
+    if (child == 0) {
+        // invertir start_row y end_row para imgs al revés
+        int actual_start = img->is_bottom_up ? start_row : img->norm_height - end_row;
+        int actual_end = img->is_bottom_up ? end_row : img->norm_height - start_row;
+
+        char args[5][16];
+        snprintf(args[0], 16, "%d", actual_start);
+        snprintf(args[1], 16, "%d", actual_end);
+        snprintf(args[2], 16, "%d", img->norm_height);
+        snprintf(args[3], 16, "%d", img->header.width_px);
+        snprintf(args[4], 16, "%d", num_threads);
+        execl(filter_name, filter_name, args[0], args[1], args[2], args[3],
+                args[4], NULL);
+    }
+
+    return child;
+}
+```
+
 == Gestión de Memoria
 
 La gestión de memoria se presentó como un tópico bastante tedioso. Este problema
@@ -95,6 +149,28 @@ Para lidiar con este problema, se utilizó memoria compartida mediante la
 libreria *POSIX*. Se empleó la función `mmap` para mapear la memoria compartida.
 Ahora, la asignación de memoria se realiza de manera dinámica según el tamaño de
 la imagen la cual es liberada por la función `munmap` y `shm_unlink`.
+
+```c
+int create_shm(const char *name, int *fd, void **pixels_image, size_t shm_size) {
+    // crear el espacio de memoria compartida
+    *fd = shm_open(name, O_CREAT | O_TRUNC | O_RDWR, 0666);
+    if (*fd == -1 || ftruncate(*fd, shm_size) != 0) {
+        return -1;
+    }
+
+    // mapear la memoria compartida
+    *pixels_image =
+        mmap(0, shm_size, PROT_WRITE | PROT_READ, MAP_SHARED, *fd, 0);
+
+    // si no se pudo mapear, eliminar el espacio de memoria compartida
+    if (*pixels_image == NULL) {
+        shm_unlink(name);
+        return -1;
+    }
+
+    return 0;
+}
+```
 
 #pagebreak()
 
@@ -110,6 +186,90 @@ la imagen la cual es liberada por la función `munmap` y `shm_unlink`.
 
 La totalidad del código desarrollado se encuentra disponible en el siguiente
 #link("https://github.com/anntnzrb/ccpg1056-final")[repositorio de GitHub].
+
+== Ejecución del Programa <exec-prog>
+
+#quote[
+  NOTA: Se recomienda referirse a la sección @docker-instructions para ejecutar el
+  programa en un contenedor aislado usando Docker.
+]
+
+Primero se debe compilar el código utilizando el comando `make` en la terminal.
+Solo por precaución, se sugiere ejecutar el comando `make clean` antes de
+ejecutar
+`make`, así se eliminan archivos residuales.
+
+```sh
+make clean && make
+```
+
+Posterior a esto, se crearán distintos ejecutables. El archivo que importa se
+llama `pipeline` y es el encargado de ejecutar todo el pipeline.
+
+Para ejecutar el programa, se puede, por ejemplo, hacerlo de la siguiente
+manera:
+
+```sh
+./pipeline 4 outputs/result.bmp
+```
+
+Una vez que el programa esté ejecutándose, se solicita que se ingrese una ruta
+de archivo para una imagen _BMP_ que se utilizará como entrada.
+
+La consola muestra un mensaje como el siguiente:
+
+```sh
+Ingrese la ruta de la imagen (o 'q' para salir):
+```
+
+Se puede ingresar una ruta como la siguiente:
+
+```sh
+Ingrese la ruta de la imagen (o 'q' para salir): ./samples/test.bmp
+```
+
+En este caso, se ejecutará el programa con 4 hilos y la imagen resultante se
+guardará en el archivo `outputs/result.bmp`.
+
+#pagebreak()
+
+=== Correr Ejemplos de Pruebas
+
+Para correr los ejemplos de prueba, localizados en el directorio `samples/`, se
+puede ejecutar el siguiente comando:
+
+```sh
+make clean && make samples
+```
+
+Los resultados se guardarán en el directorio `outputs/` con el mismo nombre de
+la imagen de entrada más el sufijo `_sol`.
+
+=== Ejecución del Programa con Docker <docker-instructions>
+
+A pesar de que el programa es funcional, este no se libra de errores y
+comportamientos inesperados, como leaks de memoria. Para evitar problemas, se
+recomienda ejecutar el programa utilizando #link("https://www.docker.com/")[Docker].
+Esto permite ejecutar el programa en un contenedor aislado, evitando problemas
+en la máquina host.
+
+La imagen configurada en el contenedor es muy pequeña, y no debería ocupar mucho
+espacio en la máquina host.
+
+Para ejecutar el programa con Docker, se puede utilizar el siguiente comando:
+
+#quote[
+  NOTA: Se debe ya tener instalado #link("https://docs.docker.com/get-docker/")[Docker]
+  en la máquina host.
+]
+
+```sh
+make docker-run
+```
+
+Por default, se corren los ejemplos de prueba provistos primero, y se ofrece una
+consola interactiva para probar el programa con alguna imagen de entrada
+proporcionada por el usuario, como se describe en la sección @exec-prog.
 
 #pagebreak()
 
