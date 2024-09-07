@@ -45,7 +45,7 @@ clean:
 # ============================================================================
 # TESTING
 # ============================================================================
-SAMPLE_IMAGES := test wizard airplane car purduetrain circle city
+SAMPLE_IMAGES := test wizard airplane car purduetrain circle
 
 samples: all
 	@for img in $(SAMPLE_IMAGES); do \
