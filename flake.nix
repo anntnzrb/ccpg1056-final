@@ -83,6 +83,9 @@
 
             # typst
             typst
+
+            # tools
+            zip
           ];
 
           pre-commit.hooks.treefmt = {

@@ -11,6 +11,7 @@ realzador
 *.pdf
 .pre-commit-config.yaml
 .DS_Store
+*.zip
 
 ### C ###
 # Prerequisites
@@ -21,7 +22,7 @@ realzador
 *.ko
 *.obj
 *.elf
-//
+
 # Linker output
 *.ilk
 *.map

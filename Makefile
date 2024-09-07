@@ -43,7 +43,7 @@ clean:
 	find . -name "*.pdf" -type f -delete
 
 # ============================================================================
-# TESTING
+# testing
 # ============================================================================
 SAMPLE_IMAGES := test wizard airplane car purduetrain circle
 
@@ -80,4 +80,11 @@ docker-run: docker-build
 docker-clean:
 	docker rmi $(DOCKER_IMAGE_NAME)
 
-.PHONY: all info clean samples docs docs-watch docker-build docker-run docker-clean
+# ============================================================================
+# submission
+# ============================================================================
+
+zip:
+	zip -r -0 g7-pipeline.zip Makefile src include samples Dockerfile
+
+.PHONY: all info clean samples docs docs-watch docker-build docker-run docker-clean zip
